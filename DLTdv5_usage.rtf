@@ -1,0 +1,161 @@
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deftab709{\fonttbl{\f0\fnil\fcharset0 Times New Roman;}{\f1\froman\fcharset128 TimesNewRomanPSMT;}{\f2\fnil Times New Roman;}}
+{\colortbl ;\red0\green0\blue0;\red255\green0\blue0;\red0\green0\blue255;}
+{\*\generator Riched20 6.3.9600}\viewkind4\uc1 
+\pard\widctlpar\sa200\cf1\kerning1\b\f0\fs28\lang1033 Usage notes for the DLTdv5 MATLAB based digitizing program\cf0\b0\fs22\par
+\cf1\fs24 last updated: Ty Hedrick, July 7th, 2014\cf0\fs22\par
+\par
+\cf1\fs24 DLTdv5 is a digitizing environment written in MATLAB designed to acquire 3D coordinates from 2-9 video sources calibrated via a set of Direct Linear Transformation (DLT) coefficients.  It can also digitize uncalibrated videos, recording only the X,Y locations of the markers in each video image.\par
+\b Updates in the 2014-07-07 release\b0\par
+\tab *Fixed GUI positioning in MATLAB 2014a (thanks to Suzanne A. Kane for the bug fix)\par
+\tab *Added GUI switch for visualizing the 2D point tracks in each camera view\par
+\tab *Added new shortcut keys for merging, splitting and deleting 2D point tracks on a per-camera-view basis; see the keymap for a more thorough list of functions\cf0\fs22\par
+\par
+\cf1\b\fs24 Changes in version 5:\cf0\b0\fs22\par
+\cf1\fs24\tab *Uses the mmreader() or VideoReader() function instead of aviread() for compatibility with a greater variety of media files and recent versions of MATLAB.\cf0\fs22\par
+\cf1\fs24\tab *Better file-save dialog\cf0\fs22\par
+\cf1\fs24\tab *Multi-window layout to better handle large numbers of videos\cf0\fs22\par
+\par
+\cf1\b\fs24 Features:\cf0\b0\fs22\par
+\cf1\fs24\tab *Reads AVI movie files rather than stacks of individual images\cf0\fs22\par
+\cf1\fs24\tab *Zooms in or out to any degree\cf0\fs22\par
+\cf1\fs24\tab *Autotracks markers through the video with user configurable parameters\cf0\fs22\par
+\cf1\fs24\tab *Simultaneous viewing of up to 4 video files\cf0\fs22\par
+\cf1\fs24\tab *When in calibrated mode displays the line of zero residual for the 2nd point given a 1st point\cf0\fs22\par
+\cf1\fs24\tab *Generates 95% confidence intervals for the resulting 3D coordinates\cf0\fs22\par
+\cf1\fs24\tab *Change the frame sync of the different video streams\cf0\fs22\par
+\cf1\fs24    \tab *Change the gamma of the video images\cf0\fs22\par
+\cf1\fs24\tab *Load, view and modify previously digitized points\cf0\fs22\par
+\cf1\fs24\tab *Requires with MATLAB 7 or later and the mmreader/VideoReader function\cf0\fs22\par
+\cf1\fs24\tab *Enhanced centroid tracking with MATLAB image analysis toolbox installed\cf0\fs22\par
+\cf1\fs24\tab *Spline filtering to within the 95% confidence intervals with MATLAB spline toolbox installed\cf0\fs22\par
+\par
+\cf1\b\fs24 System Requirements:\cf0\b0\fs22\par
+\cf1\fs24\tab Minimal: any Windows, Linux, Mac OS X or Unix system with MATLAB 7 or newer which includes the mmreader/VideoReader function\cf0\fs22\par
+\par
+\par
+\cf1\b\fs28 Quickstart instructions for using DLTdv5\cf0\b0\fs22\par
+\cf1\b\fs28 See {\cf2{\field{\*\fldinst{HYPERLINK http://www.unc.edu/~thedrick/ }}{\fldrslt{http://www.unc.edu/~thedrick/\ul0\cf0}}}}\f0\fs28  for additional information\cf0\b0\fs22\par
+\cf1\fs24 1) Place the DLTdv5.m file in your <MATLABROOT>/toolboxes/local/ directory or otherwise add it to the MATLAB path\cf0\fs22\par
+\cf1\fs24 2) Run DLTdv5, the Controls widow should appear\cf0\fs22\par
+\cf1\fs24 3) Click on the "Initialize" button in the Controls window\cf0\fs22\par
+\cf1\fs24 4) Select the number of movie files you intend to simultaneously digitize\cf0\fs22\par
+\cf1\fs24 5) Browse to the first video file and open it; repeat the process for additional video files\cf0\fs22\par
+\cf1\fs24 6) If you have calibrated cameras and more than 2 videos you will be asked whether or not you wish to load a DLT calibration coefficients file - load it if available & desired, see below for more information\cf0\fs22\par
+\cf1\fs24 7) Begin digitizing with the following commands and keystrokes:\cf0\fs22\par
+\cf1\fs24\tab left click (or Macintosh mouse click) - digitize a point\cf0\fs22\par
+\cf1\fs24\tab right click (or Macintosh control-click) - remove a digitized point\cf0\fs22\par
+\cf1\fs24\tab f key - forward one frame\cf0\fs22\par
+\cf1\fs24\tab b key - back one frame\cf0\fs22\par
+\cf1\fs24\tab = key - zoom in around the mouse pointer\cf0\fs22\par
+\cf1\fs24\tab - key - zoom out around the mouse pointer\cf0\fs22\par
+\cf1\fs24\tab r key - restore the original zoom level\cf0\fs22\par
+\cf1\fs24 8) Explore the auto-track options if desired, see details below for more information\cf0\fs22\par
+\cf1\fs24 9) Click the "Add a Point" button to digitize more than one point through the video sequence\cf0\fs22\par
+\cf1\fs24 10) Click the "Save Data" button and type out a prefix for the data file names\cf0\fs22\par
+\cf1\fs24 11) Click "Quit" or close one of the DLTdv5 windows\cf0\fs22\par
+\par
+\par
+\cf1\b\fs28 Table of Contents:\cf0\b0\fs22\par
+
+\pard\widctlpar\fi-4920\li4920\sa200\cf1\b\fs24 Initializing\b0\tab\tab The initialization process\cf0\fs22\par
+\cf1\b\fs24 Acquiring data - mouse clicks and keystrokes\tab\b0 Core digitizing functions\cf0\fs22\par
+\cf1\b\fs24 Video controls\b0\tab\tab Changing video offsets & gamma\cf0\fs22\par
+\cf1\b\fs24 Point and auto-tracking controls\b0\tab\tab Adding points and using the auto-tracker\cf0\fs22\par
+\cf1\b\fs24 Saving data\b0\tab\tab The save data function and file formats\cf0\fs22\par
+\cf1\b\fs24 Loading data\b0\tab\tab Loading previously saved data\cf0\fs22\par
+\cf1\b\fs24 Direct Linear Transformation (DLT)\tab\tab\b0 Information on DLT\cf0\fs22\par
+\cf1\b\fs24 AVI file formats and manipulation\tab\tab\b0 Comments on creating and reading AVI files\cf0\fs22\par
+\cf1\b\fs24 Performance and tuning\b0\tab\tab Getting the fastest digitizing performance\cf0\fs22\par
+\cf1\b\fs24 Modifying the auto-track predictor algorithm\tab\b0 Where to add your own predictor algorithm\cf0\fs22\par
+\cf1\b\fs24 Bugs\tab\b0\tab What to about bugs\cf0\fs22\par
+\cf1\b\fs24 License, usage agreement and citations\tab\b0\tab How to cite usage of this program\tab\cf0\fs22\par
+
+\pard\widctlpar\sa200\par
+\par
+\cf1\b\fs28 Initializing\cf0\b0\fs22\par
+\cf1\fs24 When you first start the DLTdv5 program, most of the interface is blank or disabled, only the \f1\ldblquote\f0 Initialize\f1\rdblquote\f0  and \f1\ldblquote\f0 Quit\f1\rdblquote\f0  buttons are active.  \f1\ldblquote\f0 Quit\f1\rdblquote\f0  exits the program immediately, \f1\ldblquote\f0 Initialize\f1\rdblquote\f0  starts the analysis process by first bringing up a dialog box asking how many videos you intend to digitize (1 \f2\endash\f0  7).  After noting the number of videos you intend to digitize, you'll need to select the video files, one after the other.  Finally, you'll have the option to load DLT coefficients.  The DLT coefficients file should be a comma delimited matrix with one column for each of the cameras you're digitizing from and no header, see further details below in the DLT Coefficients sections.  After picking the video file(s) (and coefficients file if desired) the initial video frames are displayed and the rest of the interface is activated.  At this point the program is initialized and the "Initialize" button is disabled, if you've made an error simply Quit and restart.\cf0\fs22\par
+\par
+\par
+\cf1\b\fs28 Acquiring data - mouse clicks and keystrokes\cf0\b0\fs22\par
+\cf1\fs24 Points are acquired by clicking on the appropriate location in one of the video frames\cf0\fs22\par
+\cf1\b\fs24 left click: \b0 digitizes a point in the frame you clicked in (or prints a warning if it is unable to do so).  The digitized point is shown by an empty red circle.  If the program is in DLT mode it then either draws a blue line of zero DLT reconstruction error on the other video frames or draws a green diamond where the reconstructed 3D point falls given the existing digitized locations and DLT coefficients.\cf0\fs22\par
+\cf1\b\fs24 right click: \b0 removes the digitized point in the frame where the click occurred.  If possible, DLT information is updated accordingly.  On a Macintosh with a one button mouse you may enter "right" clicks by holding down the Control (Ctrl) key and clicking the mouse.\cf0\fs22\par
+\cf1\f1\ldblquote\b\f0\fs24 f\f1\rdblquote\f0  key: \b0 moves \b forward\b0  one frame in all video streams\cf0\fs22\par
+\cf1\f1\ldblquote\b\f0\fs24 b\f1\rdblquote\f0  key: \b0 moves \b back\b0  one frame in all video streams\cf0\fs22\par
+\cf1\f1\ldblquote\b\f0\fs24 =\f1\rdblquote\f0  key: \b0 zooms the current video frame \b in\b0  around the mouse pointer\cf0\fs22\par
+\cf1\f1\ldblquote\b\f0\fs24 -\f1\rdblquote\f0  key: \b0 zooms the current video frame \b out\b0  around the mouse pointer\cf0\fs22\par
+\cf1\f1\ldblquote\b\f0\fs24 r\f1\rdblquote\f0  key: \b0 restores the original zoom\cf0\fs22\par
+\par
+\cf1\fs24 Please see the KeyboardMap PDF document for an exhaustive list of all keyboard shortcuts.\cf0\fs22\par
+\par
+\cf1\b\fs28 Video controls\cf0\b0\fs22\par
+\cf1\fs24 The video display is controlled by the elements in the blue section of the controls window.  \cf0\fs22\par
+\cf1\b\fs24 video gamma: \b0 a slider control that changes the video image intensity map to make the images lighter or darker\cf0\fs22\par
+\cf1\b\fs24 frame number: \b0 a slider that sets the position within the video streams\cf0\fs22\par
+\cf1\b\fs24 video offsets: \b0 each video window includes an offset box that let you adjust the relative position of the video streams.  For example, if the offset entries are -1, 1 then video #2 frame n-1 and video #3 frame n+1 are shown with video #1 frame n in the display.  Offsets are always relative to the first video.\cf0\fs22\par
+\par
+\par
+\cf1\b\fs28 Point and auto-tracking controls\cf0\b0\fs22\par
+\cf1\fs24 Auto-tracking and multiple point functions are controlled by the elements in the green section of the controls window.  Autotrack mode \i off\i0  employs no autotracking, \i semi\i0  advances one frame and uses the autotracker to guess the point location in the new image but then waits for user input, \i auto\i0  advances one frame, guesses a point location in the new frame, and if the fit is good enough advances again without user input.  Autotrack mode can be changed while the program is running in \i auto\i0  mode.  This may be necessary if the autotracker locks on to a static portion of the image.  Autotrack \i multi\i0  mode is only available by use of the menu rather than the menu keyboard shortcut (the \i x\i0  key); \i multi\i0  mode acts like \i semi\i0  mode but operates over all points not just the active point.\cf0\fs22\par
+\par
+\cf1\fs24 The autotracker functions by trying to find a match between a small group of pixels around the known point in the current video frame with an equivalently sized group of pixels in the next frame.  The group of pixels in question is displayed in the \b Autotrack search image \b0 section of the controls window.  The size of this small group of pixels is controlled by the "\b Autotrack search area size\b0 " field in the controls window.  If the match between the pixels in the current and next frames (the \b Autotrack fit\b0 ) is greater than the "\b Autotrack threshold\b0 " then the autotracker proceeds to examine the next frame (auto mode) or draws the next frame and new point on the screen but waits for additional user input (semi mode).  The most appropriate search area size and threshold values depend on the quality of the video recording, size and contrast of the markers and so on.  Some experimentation will be needed to determine the best values, reasonable starting points are provided as defaults.  The autotracker returns integer X and Y coordinates.\cf0\fs22\par
+\par
+\cf1\fs24 The \b Add a Point \b0 button creates the data structures for a new point and switches the interface to place new inputs into that point.  Values for other points are displayed as light blue circles and diamonds.  The \b Current Point\b0  switches the interface between different points created via the Add a Point button.\cf0\fs22\par
+\par
+\par
+\cf1\b\fs28 Saving Data\cf0\b0\fs22\par
+\cf1\fs24 DLTdv5 saves the accumulated data as a set of 4 comma delimited text files:\cf0\fs22\par
+\cf1\fs24\tab [prefix]xypts.csv \f2\endash\f0  a comma separated data file with X1, Y1, X2, Y2, etc. for each frame\cf0\fs22\par
+\cf1\fs24\tab [prefix]xyzpts.csv \f2\endash\f0  a data file with X,Y,Z DLT output for each frame\cf0\fs22\par
+\cf1\fs24\tab [prefix]xyzres.csv \f2\endash\f0  a data file with the DLT residual for each frame\cf0\fs22\par
+\cf1\fs24\tab [prefix]offsets.csv \f2\endash\f0  a data file with video1 offset, video2 offset, etc. for each frame\cf0\fs22\par
+\cf1\fs24 Each of these files has a minimal, auto-generated header line\cf0\fs22\par
+\par
+\cf1\fs24 If the Spline toolbox is installed, DLTdv5 can generate spline-filtered points to within the 95% confidence interval of the measurement.  This is presented as an optional task during while saving as it relies on a Monte Carlo approach and can take a while for large data sets.  If generated, this will result in two additional files:\cf0\fs22\par
+\cf1\fs24\tab [prefix]xyzCI.csv - a data file with the +-95% confidence intervals for each value in [prefix]xyzpts.csv\cf0\fs22\par
+\cf1\fs24\tab [prefix]xyzFilt.csv - a data file with the 3D coordinates smoothed to fall within the 95% confidence intervals 95% of the time\cf0\fs22\par
+\par
+\par
+\cf1\b\fs28 Loading Data\cf0\b0\fs22\par
+\cf1\fs24 DLTdv5 can load previously saved data files.  In principle, data could be loaded at any time following initialization.  In practice, I suggest that data be loaded immediately following initialization.  Although some efforts are made to ensure that the loaded data structures match the videos, in practice it is not possible to be certain that the videos and digitized point data match - caution on the part of the user is recommended!  Finally, the load function attempts to determine the proper video offsets, but may fail to do so if the offsets changed midway through the video sequence.\cf0\fs22\par
+\par
+\par
+\cf1\b\fs28 Direct Linear Transformation (DLT)\cf0\b0\fs22\par
+\cf1\fs24 DLT is a reasonably straightforward method for calibrating cameras such that images from two or more cameras can be used to reconstruct point locations in three dimensions.  A complete overview of this method and some of the alternatives is well beyond the scope of a simple help file, I recommend that the interested reader visit {{\field{\*\fldinst{HYPERLINK http://www.kwon3d.com }}{\fldrslt{http://www.kwon3d.com\ul0\cf0}}}}\f0\fs24  for an excellent introduction.  DLT residuals result when the [X,Y] pairs from the cameras do not result in a perfect solution and are the mean square error in pixels about the [X,Y,Z] location returned by the DLT operation.  Note that a pixel may not represent an equivalent distance in real units along each of the separate axes.  The DLT residual for the current point is displayed in the Controls window and the collection of residuals is saved in the [prefix]xyzres.csv file.  Note that placing the second [X,Y] pair on the blue "line of zero DLT residual" will result in a residual near zero; examination of the scope of the line should convince the reader that the DLT residual is an imperfect and incomplete measurement of the reconstruction error.  Furthermore, reliance on the blue line during the digitizing process may bias the user toward smaller residuals that might be obtained by digitizing each point separately, without using information obtained from other points.\cf0\fs22\par
+\par
+\cf1\fs24 DLTdv5 does not generate DLT parameters for the different video sources, instead it loads a pregenerated set of DLT coefficients stored in a comma separated text file.  These DLT coefficients can be generated in many ways, one of which is use of the companion program DLTcal3.m - please see the appropriate help file for additional information.\cf0\fs22\par
+\par
+\par
+\cf1\b\fs28 AVI file formats and manipulation\cf0\b0\fs22\par
+\cf1\fs24 DLTdv5 relies on MATLAB's built in AVI reading abilities as provided by the mmreader or VideoReader function.  In principle, this should allow DLTdv5 to read compressed AVI files.  In practice, your ability to read files depends on whether or not the appropriate media codec is installed on your computer.  Furthermore, performance in reading heavily compressed video files can be quite poor.  Please see the Compressed_Files_and_Digitizing.rtf file for further information and for notes on how to create heavily compressed AVI files that perform well with DLTdv5.\cf0\fs22\par
+\par
+\cf1\fs24 DLTdv5 ignores color information by default but can display it via a user-selectable option in the interface.  Color information is not used in the point tracking routines, the color image is converted internally to grayscale.\cf0\fs22\par
+\cf1\fs24  \cf0\fs22\par
+\cf1\fs24 DLTdv5 can also read uncompressed versions of the Vision Research (Phantom Camera) *.cin or *.cine movie format\cf0\fs22\par
+\par
+\par
+\cf1\b\fs28 Performance and tuning\cf0\b0\fs22\par
+\cf1\fs24 MATLAB has some intrinsic limitations that make DLTdv5 much slower than equivalent software implemented in other programming environments or languages.  The slowest operation in the program is reading the next video frame(s) from disk and then copying them to the screen.  This means that higher resolution videos will reduce performance, and digitizing two videos simultaneously is approximately twice as slow as digitizing one.  To achieve the best possible performance the AVI files should be copied to a local hard disk attached either internally or via USB 2.0 or Firewire but not via USB 1.1.  Graphics card performance can also be a problem on some systems, especially laptops and Linux systems, reducing the size of the digitizing window and zooming in rather than expanding the window to full screen may speed up the graphics performance.  \cf0\fs22\par
+\par
+\cf1\b\fs28 Exposing subfunctions\cf0\b0\fs22\par
+\cf1\fs24 DLTdv5 includes many useful functions embedded as subfunctions in the main program.  If you're interested in using any of these simply extract them from the DLTdv5 file and make sure that they're in the MATLAB path.\cf0\fs22\par
+\par
+\par
+\cf1\b\fs28 Bugs\cf0\b0\fs22\par
+\cf1\fs24 If you encounter any bugs, feel free to fix them and send me the fix for incorporation into the copy on the server!  If you're not able to track down the bug, please send in a bug report; describing the bug and the situation that triggers it as completely as possible.  Bug reports should be sent to Tyson Hedrick, <thedrick@bio.unc.edu>.\cf0\fs22\par
+\par
+\par
+\cf1\b\fs28 Modifying the auto-tracking predictor algorithm\cf0\b0\fs22\par
+\cf1\fs24 In addition to the image matching routine described earlier, the auto-tracker also attempts to predict the location of the point in the next frame by fitting an equation to previously digitized points and extrapolating the position of the point in the next frame.  This location is then used as the center point for the image mapping search.  The current algorithm for predicting the point location is a linear Kalman filter, with linear fit and static point predictions as a backup.  The Kalman filter performs well in a wide variety of circumstances, but may not be the best choice for all conditions.  If you have special requirements or a better formal description of the underlying system generating the point sequence you can write your own subfunction and add it to the set of options.  See the "AutoTrackPredictor" subfunction in DLTdv5.m for the framework for adding your predictor.\cf0\fs22\par
+\par
+\par
+\cf1\b\fs28 License, usage agreement and citations\cf0\b0\fs22\par
+\cf1\fs24 This program is provided as-is, no warranty is provided.  I encourage users to make improvements and fixes to the software as the mood strikes them; substantial or useful additions should be returned to the community by emailing the improvements to me (Tyson Hedrick, thedrick@bio.unc.edu).\cf0\fs22\par
+\par
+\cf1\fs24 The program should be referred to in the text of a scientific publication as custom digitizing software with a citation to:\cf0\fs22\par
+
+\pard\widctlpar\sa200\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\cf1\fs24 Hedrick, T. L. (2008), Software techniques for two- and three-dimensional kinematic measurements of biological and biomimetic systems, Bioinspiration & Biomimetics\cf0\fs22\par
+
+\pard\widctlpar\sa200\par
+}
+ 
