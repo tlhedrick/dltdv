@@ -95,10 +95,10 @@ elseif cc=='.' || cc==',' % change point
   end
   app.CurrentpointDropDown.Value=num2str(app.sp); % update menu
   
-  pt=app.xypts(fr,(vnum*2-1:vnum*2)+(app.sp-1)*2*app.nvid);
+  pt=app.xypts(fr,((axh-300)*2-1:(axh-300)*2)+(app.sp-1)*2*app.nvid);
   
   % update the magnified point view
-  updateSmallPlot(app,app.handles,vnum,pt);
+  updateSmallPlot(app,app.handles,(axh-300),pt);
   
   % do a quick screen redraw
   quickRedraw(app,app.handles,app.sp,fr);

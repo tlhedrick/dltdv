@@ -33,8 +33,8 @@ if netType==1
     I2{j}=blockproc(img,round(cropScales(j,:)/2),fun,'padpartialblocks',true,'bordersize',round(cropScales(j,:)/4)); % process image blocks
     I2{j}=I2{j}(1:size(img,1),1:size(img,2),:); % crop edges
     I2{j}=clearCorners(I2{j}); % remove detections at the image corners
-    I2{j}=I2{j}.*repmat(I2{j}(:,:,size(I2{j},3))>minQ,[1 1 size(I2{j},3)]);
-    I2max(:,j)=max(max(I2{j}));
+    I2{j}=I2{j}.*repmat(I2{j}(:,:,size(I2{j},3))>minQ,[1 1 size(I2{j},3)]); % create a multiplicative mask from the final channel
+    I2max(:,j)=max(max(I2{j})); 
   end
   bestScale=find(sum(I2max(1:end-1,:))==max(sum(I2max(1:end-1,:))));
   
@@ -61,10 +61,29 @@ if netType==1
   %           cp = round(median([n,m]));
   %           blockSize=max(round(std([n,m])));
   
-  % bounding box method
-  bb = [min(n) min(m) max(n) max(m)];
-  cp = round([bb(1)+(bb(3)-bb(1))/2,bb(2)+(bb(4)-bb(2))/2]);
-  blockSize = max(round([bb(4)-bb(2),bb(3)-bb(1)]/2));
+%   % bounding box method
+%   bb = [min(n) min(m) max(n) max(m)];
+%   cp = round([bb(1)+(bb(3)-bb(1))/2,bb(2)+(bb(4)-bb(2))/2]);
+%   blockSize = max(round([bb(4)-bb(2),bb(3)-bb(1)]/2));
+  
+  % sliding box search
+  % version 1 - on the summary layer
+  myFun=@(x)sum(sum(x>minQ));
+  out = blockCheck(I2{bestScale}(:,:,end),cropScales(1),round(cropScales(1)/8),myFun);
+  idx=find(out(:,3)==max(out(:,3))); % find the best center
+  steps = round(-(cropScales(1)-1)/2:(cropScales(1)-1)/2); % indices for the block away from center
+  p=img(out(idx(1),1)+steps,out(idx(1),2)+steps,:);
+  
+  % version 2 - on each layer separately
+  myFun=@(x)sum(sum(x>minQ));
+  out = blockCheck(I2{bestScale}(:,:,1:end-1),cropScales(1),round(cropScales(1)/4),myFun);
+  pscores = out(:,3:end)>0;
+  pscores=sum(pscores,2);
+  idx=find(pscores==max(pscores));
+  cp=fliplr(round(mean(out(idx,1:2),1)));
+  steps = round(-(cropScales(1)-1)/2:(cropScales(1)-1)/2); % indices for the block away from center
+  %p=img(cp(2)+steps,cp(1)+steps,:); % test image
+  blockSize=cropScales(1)/2;
   
   rx=round(1.5*[-blockSize blockSize-1])+cp(1); % basic
   % check borders
