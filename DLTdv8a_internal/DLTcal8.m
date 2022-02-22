@@ -12,6 +12,7 @@ function [] = DLTcal8(varargin)
 % Version 3 - Ty Hedrick 3/27/08
 % Version 5 - Ty Hedrick 7/12/10
 % Version 8 - Ty Hedrick 2019-10-25
+%   Ty Hedrick 2022-02-21: various small bugfixes
 
 if nargin==0 % no inputs, run the gui initialization routine
   
@@ -70,12 +71,12 @@ switch call
   %% case 99 - GUI figure creation
   case {99} % Initialize the GUI
     
-    disp(sprintf('\n'))
-    disp('DLTcal8 (updated September 30, 2021)')
-    disp(sprintf('\n'))
+    fprintf('\n')
+    disp('DLTcal8 (updated February 21, 2022)')
+    fprintf('\n')
     disp('Visit https://biomech.web.unc.edu/ for more information,')
     disp('tutorials, sample data & updates to this program.')
-    disp(sprintf('\n'))
+    fprintf('\n')
     
     top=20.2; % top of the controls layout
     
@@ -291,6 +292,10 @@ switch call
     if isfield(uda,'specdata')==0
       [specfile,specpath]=uigetfile({'*.csv','comma separated values'}, ...
         'Please select your calibration object specification file');
+      if specfile==0
+          % user cancel
+          return
+      end
       specdata=dlmread([specpath,specfile],',',1,0); % read the cal. file
       if size(specdata,2)==3 % got a good spec file
         uda.specdata=specdata; % put it in userdata
@@ -314,10 +319,15 @@ switch call
       uda.cNum=1; % initial camera # is 1 (first camera)
       
     else % adding a camera to an ongoing calibration run
-      set(h(2),'deletefcn','');
-      close(h(2)) % close the old video window
-      uda.cNum=uda.cNum+1; % increment camera number
-      uda.cp=1; % set current point back to 1
+        try
+            set(h(2),'deletefcn','');
+            close(h(2)) % close the old video window
+            uda.cNum=uda.cNum+1; % increment camera number
+            uda.cp=1; % set current point back to 1
+        catch
+            % if the above fails it's due to the user canceling image
+            % loading and the above shouldn't run again anyway
+        end
     end
     
     % get the image files
@@ -325,6 +335,12 @@ switch call
       'Image and movie files (*.bmp, *.tif, *.jpg, *.png, *.avi, *.cin, *.mp4, *.mov)'}, ...
       ['Select the calibration image files. (Ctrl-click to pick',...
       ' several)'],'MultiSelect','on');
+    
+    if calfnames==0 % user pressed cancel
+        set(h(1),'Userdata',uda);
+        return
+    end
+  
     if iscell(calfnames)==0 % convert strings to cells
       uda.calfnames={calfnames};
     else
