@@ -44,18 +44,22 @@ for i=1:app.numpts % for each point
   % subframe interpolation
   for fr=1:size(app.xypts,1) % for each frame
     try
-      xy=sp2full(app.xypts(fr-1:fr+1,(1:2*app.nvid)+(i-1)*2*app.nvid));
       sfi=mod(full(app.offset(fr,:)),1); % subframe offset in this frame
-      skel=(-1:1)'; % interpolation sequence
-      for j=1:app.nvid % loop through each camera
-        ndx=find(isfinite(xy(:,j*2)));
-        if numel(ndx)>1
-          xyI(:,j*2-1:j*2)=interp1(skel(ndx),xy(ndx,j*2-1:j*2),skel+sfi(j),'linear','extrap');
-        else
-          xyI(:,j*2-1:j*2)=xy(:,j*2-1:j*2);
+      if sum(abs(sfi))~=0
+        xy=sp2full(app.xypts(fr-1:fr+1,(1:2*app.nvid)+(i-1)*2*app.nvid));
+        skel=(-1:1)'; % interpolation sequence
+        for j=1:app.nvid % loop through each camera
+          if sfi(j)~=0
+            ndx=find(isfinite(xy(:,j*2)));
+            if numel(ndx)>1
+              xyI(:,j*2-1:j*2)=interp1(skel(ndx),xy(ndx,j*2-1:j*2),skel+sfi(j),'linear','extrap');
+            else
+              xyI(:,j*2-1:j*2)=xy(:,j*2-1:j*2);
+            end
+          end
         end
+        camPts(fr-1:fr+1,(1:2*app.nvid)+(i-1)*2*app.nvid)=full2sp(xyI(2,:));
       end
-      camPts(fr-1:fr+1,(1:2*app.nvid)+(i-1)*2*app.nvid)=full2sp(xyI(2,:));
     catch % fallback to no interpolation
       % do nothing - campts is already uninterpolated
     end

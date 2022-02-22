@@ -1,24 +1,25 @@
-function [xypts,quality]=netApply(img,net,netInfo,netType,numPts,minQ)
+function [xypts,quality,rawNetOut]=netApply(img,net,netInfo,netType,numPts,minQ)
 
-% function xypts=netApply(img,net,netInfo,netType,numPts)
+% function [xypts,quality,rawNetOut]=netApply(img,net,netInfo,netType,numPts,minQ)
 %
 % Apply deep learning networks to multiple images
 
 for i=1:numel(img)
-  [xypts(i,:),quality(i,:)]=getDetections(img{i},net(i),netInfo{i},netType(i),numPts(i),minQ);
+  [xypts(i,:),quality(i,:),rawNetOut{i}]=getDetections(img{i},net(i),netInfo{i},netType(i),numPts(i),minQ);
 end
 
 
-function [xyp,quality] = getDetections(img,net,netInfo,netType,numPts,minQ)
+function [xyp,quality,rawNetOut] = getDetections(img,net,netInfo,netType,numPts,minQ)
 
 % multi-cropping network
 if netType==1
+  rawNetOut=[]; % not implemented for multi-cropping networks yet
   
   % get cropscales
   try
-    cropScales=repmat(max(netInfo.minCropSize),1,2);
+    cropScales=repmat(max([netInfo.minCropSize,224]),1,2);
   catch ME
-    cropScales = [336 336]; % plausible default
+    cropScales = [224 224]; % plausible default
   end
   
   % setup
@@ -155,6 +156,9 @@ else
   
   % predict
   netOut=predict(net,img1);
+  
+  % store raw net output (final layer only)
+  rawNetOut=netOut(:,:,end);
   
   % get points
   for j=1:size(netOut,3)-1

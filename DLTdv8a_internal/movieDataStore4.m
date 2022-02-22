@@ -172,7 +172,13 @@ classdef movieDataStore4 < matlab.io.Datastore
       bkg=myds.backgrounds;
       
       % get a list of data to access
-      s=randsample(1:size(myds.availableData,1),myds.MiniBatchSize);
+      if size(myds.availableData,1)>myds.MiniBatchSize
+        % sample without replacement if possible
+        s=randsample(1:size(myds.availableData,1),myds.MiniBatchSize);
+      else
+        % sample with replacement if necessary
+        s=randsample(1:size(myds.availableData,1),myds.MiniBatchSize,true);
+      end
       s=sort(s);
       cnt=1;
       for i=s
@@ -265,7 +271,14 @@ classdef movieDataStore4 < matlab.io.Datastore
       blockSize=112;
       
       % get a list of data to access
-      s=randsample(1:size(myds.availableData,1),myds.MiniBatchSize);
+      if size(myds.availableData,1)>myds.MiniBatchSize
+        % sample without replacement if possible
+        s=randsample(1:size(myds.availableData,1),myds.MiniBatchSize);
+      else
+        % sample with replacement if necessary
+        s=randsample(1:size(myds.availableData,1),myds.MiniBatchSize,true);
+      end
+      
       s=sort(s);
       cnt=1;
       for i=s
@@ -346,6 +359,10 @@ classdef movieDataStore4 < matlab.io.Datastore
         end
         
         % pull out image and new coordinates for setting the heat map
+        % skip if we do not have any location data
+        if isnan(sum(rx)) || isnan(sum(ry))
+          continue
+        end
         img2=imgr(ry(1):ry(2),rx(1):rx(2),:);
         uv2=round(uvr-[rx(1),ry(1)]);
         

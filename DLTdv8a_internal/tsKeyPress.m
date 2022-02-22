@@ -102,6 +102,107 @@ elseif cc=='.' || cc==',' % change point
   
   % do a quick screen redraw
   quickRedraw(app,app.handles,app.sp,fr);
+  
+elseif cc=='D' % remove current point from the data array
+  sp=app.sp; % store current selected point (will be deleted)
+  if app.numpts==1
+    beep
+    disp('You need to have 2 or more points defined to remove one.')
+  else
+    [button] = questdlg(['Really remove point #',num2str(sp),' from the data?'],'Really?');
+    
+    if strcmp(button,'Yes')
+      % store backup for undo
+      storeUndo(app);
+      
+      % update number of points
+      app.numpts=app.numpts-1;
+      
+      % update points pull-down menu
+      ptstring={};
+      for i=1:app.numpts
+        ptstring{i}=num2str(i);
+      end
+      app.CurrentpointDropDown.Items=ptstring;
+      app.CurrentpointDropDown.Value=ptstring{max([1,sp-1])};
+      app.sp=max([1,sp-1]);
+      
+      % update the data matrices by removing the deleted point
+      app.xypts(:,(1:2*app.nvid)+(sp-1)*2*app.nvid)=[];
+      app.dltpts(:,sp*3-2:sp*3)=[];
+      app.dltres(:,sp)=[];
+      
+      fullRedraw(app);
+      disp('Point deleted.')
+    else
+      disp('Delete canceled.')
+    end
+  end
+  
+elseif cc=='J' % bring up joiner interface
+  sp=app.sp; % store current selected point
+  ptList=[];
+  ptSeq=(1:app.numpts);
+  for i=1:numel(ptSeq)
+    ptList{i}=['Point #',num2str(i)];
+  end
+  [selection,ok]=listdlg('liststring',ptList,'Name',...
+    'Point picker','PromptString',...
+    ['Pick a point to join with point #',num2str(sp)],'listsize',...
+    [300,200],'selectionmode','single');
+  
+  if ok==true && sp~=selection
+    spD=max([sp,selection]); % will be deleted
+    sp=min([sp,selection]); % will be kept
+    storeUndo(app);
+    
+    % extract arrays and use nanmean to combine
+    m = sp2full(app.xypts(:,(1:2*app.nvid)+(sp-1)*2*app.nvid));
+    m(:,:,2) = sp2full(app.xypts(:,(1:2*app.nvid)+(spD-1)*2*app.nvid));
+    m=nanmean(m,3);
+    m(isnan(m))=0;
+    app.xypts(:,(1:2*app.nvid)+(sp-1)*2*app.nvid)=m;
+    
+    % delete old points
+    app.xypts(:,(1:2*app.nvid)+(spD-1)*2*app.nvid)=[];
+    app.dltpts(:,spD*3-2:spD*3)=[];
+    app.dltres(:,spD)=[];
+    
+    app.numpts=app.numpts-1; % update number of points
+    
+    % update the drop-down menu
+    ptstring={};
+    for i=1:app.numpts
+      ptstring{i}=num2str(i);
+    end
+    app.CurrentpointDropDown.Items=ptstring;
+    app.CurrentpointDropDown.Value=ptstring{app.sp};
+    
+    % Compute 3D coordinates + residuals
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    if app.dlt
+      %added dedistortion (Baier 1/16/06) (modified Hedrick 6/23/08)
+      udist=m;
+      udist(udist==0)=NaN;
+      for j=1:size(udist,2)/2
+        if isempty(app.camud{j})==false
+          udist(:,j*2-1:j*2)=applyTform(app.camud{j},udist(:,j*2-1:j*2));
+        end
+      end
+      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      [rawResults,rawRes]=dlt_reconstruct_v2(app.dltcoef,udist);
+      app.dltpts(:,sp*3-2:sp*3)=full2sp(rawResults(:,1:3));
+      app.dltres(:,sp)=full2sp(rawRes);
+    end
+    
+    fullRedraw(app);
+    
+  elseif sp==selection
+    disp('You cannot join a point to itself.')
+  else
+    disp('Point joining canceled.')
+  end
+  
 end
 
 % fullRedraw(app)

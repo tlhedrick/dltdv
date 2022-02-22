@@ -71,9 +71,9 @@ switch call
   case {99} % Initialize the GUI
     
     disp(sprintf('\n'))
-    disp('DLTcal8 (updated October 25, 2019)')
+    disp('DLTcal8 (updated September 30, 2021)')
     disp(sprintf('\n'))
-    disp('Visit http://www.unc.edu/~thedrick/ for more information,')
+    disp('Visit https://biomech.web.unc.edu/ for more information,')
     disp('tutorials, sample data & updates to this program.')
     disp(sprintf('\n'))
     
@@ -321,8 +321,8 @@ switch call
     end
     
     % get the image files
-    [calfnames,uda.calpname]=uigetfile( {'*.bmp;*.tif;*.jpg;*.avi;*.cin;*.mp4;*.mov', ...
-      'Image and movie files (*.bmp, *.tif, *.jpg, *.avi, *.cin, *.mp4, *.mov)'}, ...
+    [calfnames,uda.calpname]=uigetfile( {'*.bmp;*.tif;*.jpg;*.png;*.avi;*.cin;*.mp4;*.mov', ...
+      'Image and movie files (*.bmp, *.tif, *.jpg, *.png, *.avi, *.cin, *.mp4, *.mov)'}, ...
       ['Select the calibration image files. (Ctrl-click to pick',...
       ' several)'],'MultiSelect','on');
     if iscell(calfnames)==0 % convert strings to cells

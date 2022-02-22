@@ -20,7 +20,7 @@ if ischar(fname) % for mrf, cih or cine files
   [~,~,ext]=fileparts(fname);
   
   if strcmpi(ext,'.cin') || strcmpi(ext,'.cine') % vision research cine
-    mov.cdata=cineRead(fname,frame);
+    mov.cdata=cineRead2(fname,frame);
   elseif strcmpi(ext,'.mrf') % IDT/Redlake multipage raw
     mov.cdata=mrfRead(fname,frame);
   elseif strcmpi(ext,'.cih') % Photron Mraw raw
@@ -34,11 +34,25 @@ else % fname is not a char so it is a videoreader obj
   % check current time & don't seek to a new time if we don't need to
   ctime=fname.CurrentTime;
   ftime=(frame-1)*(1/fname.FrameRate); % start time of desired frame
-  if abs(ctime-ftime)<0.90/fname.FrameRate % use 0.9 instead of 1 to avoid ambiguity near the end of a file
-    % no need to seek
+  ftime2=(frame-2)*(1/fname.FrameRate); % start time of frame before desired frame
+  if abs(ctime-ftime)<0.33/fname.FrameRate % 2020-12-13 set a very high bar to not seek
+    % definitely no need to seek
+    %disp('not seeking')
+    mov.cdata=fname.readFrame;
+  elseif ctime>ftime2 && ctime<ftime
+    %disp('not seeking - intermediate position')
+    mov.cdata=fname.readFrame;
+    ctime2=fname.CurrentTime; % time after the read
+    if ctime2<ftime
+      disp(['  detected bad read - re-seeking frame ',num2str(frame)])
+      fname.CurrentTime=ftime;
+      mov.cdata=fname.readFrame;
+    end
   else
     fname.CurrentTime=ftime;
+    %disp('seeking')
+    mov.cdata=fname.readFrame;
   end
-  mov.cdata=fname.readFrame;
+  
 end
 end

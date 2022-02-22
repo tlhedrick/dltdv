@@ -22,6 +22,7 @@ function [cdata] = cineRead2(fileName,frameNum)
 %  updated March 1, 2009
 %  updated Dec 2, 2011 (error handling)
 %  updated Nov 8, 2019 (cineRead2, flip image for upper-left origin)
+%  updated 2020-12-11 (read 10-bit [i.e. packed] images)
 
 if exist('frameNum','var')==false
   % generate exception
@@ -48,7 +49,7 @@ if frameNum<=info.NumFrames && frameNum>0 && exist('cdata','var')==false
   % offset is the location of the start of the target frame in the file -
   % the pad + 8bits for each frame + the size of all the prior frames
   offset=info.headerPad+8*info.NumFrames+8*frameNum+(frameNum-1)* ...
-    (info.Height*info.Width*info.bitDepth/8);
+    (info.Height*info.Width*info.bitDepth/8); % in bytes
   
   % get a handle to the file from the filename
   f1=fopen(fileName);
@@ -69,6 +70,10 @@ if frameNum<=info.NumFrames && frameNum>0 && exist('cdata','var')==false
   elseif info.bitDepth==24 % 24bit color
     idata=double(fread(f1,info.Height*info.Width*3,'*uint8'))/255;
     nDim=3;
+  elseif info.bitDepth==10 % 10bit packed
+    %disp('10-bit read')
+    idata=fread(f1,info.Height*info.Width,'*ubit10','ieee-be');
+    nDim=1;
   else
     disp('error: unknown bitdepth')
     return
@@ -82,7 +87,11 @@ if frameNum<=info.NumFrames && frameNum>0 && exist('cdata','var')==false
   cdata=zeros(info.Height,info.Width,nDim);
   for i=1:nDim
     tdata=reshape(idata(i:nDim:end),info.Width,info.Height);
+    %tdata=reshape(idata(end:-nDim:i),info.Width,info.Height);
     cdata(:,:,i)=rot90(tdata,1);
+    if info.bitDepth==10
+      cdata(:,:,i)=flipud(cdata(:,:,i));
+    end
   end
   
 else
