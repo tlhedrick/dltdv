@@ -108,32 +108,34 @@ elseif cc=='f' || cc=='b' || cc=='F' || cc=='B' || cc=='<' || cc=='>' && axh~=0
   smax=app.FrameNumberSlider.Limits(2); % max slider value
   smin=app.FrameNumberSlider.Limits(1); % min slider value
   axn=axh-300; % axis number
+  stepSize=app.StepsizeEditField.Value; % step size
+  bigStepSize=app.BigstepsizeEditField.Value; % big step size
 
   if isnan(axn)
     disp('Error: The mouse pointer is not in an axis.')
     return
   end
   cp=sp2full(app.xypts(fr,(axn*2-1:axn*2)+(sp-1)*2*app.nvid)); % set current point to xy value
-  if cc=='f' && fr+1 <= smax
+  if cc=='f' && fr+stepSize <= smax
     if (autoT==3 || autoT==5) && isfinite(cp(1)) % semi-auto tracking
       keyadvance=1; % set keyadvance variable for DLTautotrack function
       DLTautotrack3fun(app,app.handles,keyadvance,axn,cp,fr,sp);
     end
-    app.FrameNumberSlider.Value=fr+1; % forward 1 frame
+    app.FrameNumberSlider.Value=fr+stepSize; % forward stepSize frame
     fr=fr+1; 
-  elseif cc=='b' && fr-1 >= smin
-    app.FrameNumberSlider.Value=fr-1; % back 1 frame
+  elseif cc=='b' && fr-stepSize >= smin
+    app.FrameNumberSlider.Value=fr-stepSize; % back stepSize frame
     fr=fr-1;
-  elseif cc=='F' && fr+50 < smax
-    app.FrameNumberSlider.Value=fr+50; % current frame + 50
-    fr=fr+50;
-  elseif cc=='F' && fr+50 > smax
+  elseif cc=='F' && fr+bigStepSize < smax
+    app.FrameNumberSlider.Value=fr+50; % current frame + bigStepSize
+    fr=fr+bigStepSize;
+  elseif cc=='F' && fr+bigStepSize > smax
     app.FrameNumberSlider.Value=smax; % set to last frame
     fr=smax;
-  elseif cc=='B' && fr-50 >= smin
-    app.FrameNumberSlider.Value=fr-50;% current frame - 50
+  elseif cc=='B' && fr-bigStepSize >= smin
+    app.FrameNumberSlider.Value=fr-bigStepSize;% current frame - bigStepSize
     fr=fr-50;
-  elseif cc=='B' && fr-50 < smin
+  elseif cc=='B' && fr-bigStepSize < smin
     app.FrameNumberSlider.Value=smin; % set to first frame
     fr=smin;
   elseif cc=='<' || cc=='>' % switch to start or end of this point in this camera

@@ -89,9 +89,11 @@ end % end of click selection type processing for normal & alt clicks
 % alt = right click
 % extend = middle click or left+right
 if seltype==1 && autoT>1
-  if autoT==2 && fr<app.FrameNumberSlider.Limits(2) % auto-advance
-    app.FrameNumberSlider.Value=fr+1; % current frame + 1
-    fr=fr+1;
+    stepSize=app.StepsizeEditField.Value;
+  if autoT==2 && fr+stepSize<=app.FrameNumberSlider.Limits(2) % auto-advance
+    
+    app.FrameNumberSlider.Value=fr+stepSize; % current frame + stepSize
+    fr=fr+stepSize;
     % full redraw of the screen
     fullRedraw(app);
     % update the control / zoom window
