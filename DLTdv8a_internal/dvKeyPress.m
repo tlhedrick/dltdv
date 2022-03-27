@@ -127,7 +127,7 @@ elseif cc=='f' || cc=='b' || cc=='F' || cc=='B' || cc=='<' || cc=='>' && axh~=0
     app.FrameNumberSlider.Value=fr-stepSize; % back stepSize frame
     fr=fr-1;
   elseif cc=='F' && fr+bigStepSize < smax
-    app.FrameNumberSlider.Value=fr+50; % current frame + bigStepSize
+    app.FrameNumberSlider.Value=fr+bigStepSize; % current frame + bigStepSize
     fr=fr+bigStepSize;
   elseif cc=='F' && fr+bigStepSize > smax
     app.FrameNumberSlider.Value=smax; % set to last frame
@@ -221,14 +221,13 @@ elseif cc=='i' || cc=='j' || cc=='k' || cc=='m' || cc=='4' || ...
     % subframe interpolation
     try
       xy=sp2full(app.xypts(fr-1:fr+1,(1:2*app.nvid)+(sp-1)*2*app.nvid));
+      xyI=xy;
       sfi=mod(full(app.offset(fr,:)),1); % subframe interpolation
       skel=(-1:1)'; % interpolation sequence
       for i=1:app.nvid % loop through each camera
         ndx=find(isfinite(xy(:,i*2)));
         if numel(ndx)>1
-          xyI(:,i*2-1:i*2)=interp1(skel(ndx),xy(ndx,i*2-1:i*2),skel+sfi(i),'linear','extrap');
-        else
-          xyI(:,i*2-1:i*2)=xy(:,i*2-1:i*2);
+          xyI(ndx,i*2-1:i*2)=interp1(skel(ndx),xy(ndx,i*2-1:i*2),skel(ndx)+sfi(i),'linear','extrap');
         end
       end
       udist=xyI(2,:);
