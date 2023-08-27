@@ -162,7 +162,7 @@ elseif cc=='J' % bring up joiner interface
     % extract arrays and use nanmean to combine
     m = sp2full(app.xypts(:,(1:2*app.nvid)+(sp-1)*2*app.nvid));
     m(:,:,2) = sp2full(app.xypts(:,(1:2*app.nvid)+(spD-1)*2*app.nvid));
-    m=nanmean(m,3);
+    m=inanmean(m,3);
     m(isnan(m))=0;
     app.xypts(:,(1:2*app.nvid)+(sp-1)*2*app.nvid)=m;
     

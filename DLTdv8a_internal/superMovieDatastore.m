@@ -75,6 +75,15 @@ classdef superMovieDatastore < matlab.io.Datastore
        
        % increment the read counter, see myds.hasdata()
       mysds.readCounter=mysds.readCounter+1;
+
+      % debug - check for nans
+      for i=1:size(data,1)
+          d=table2array(data(i,2));
+          d2=d{:,:,1};
+          if sum(sum(isnan(d2(:,:,1))))>0
+              disp('SuperMovieDataStore: NaN found')
+          end
+      end
        
      end
      

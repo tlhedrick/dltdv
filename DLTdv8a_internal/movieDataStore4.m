@@ -38,6 +38,7 @@ classdef movieDataStore4 < matlab.io.Datastore
     crop = false % enable crop behavior (crop around a single point)
     cropAndResize = false % enable crop and resize (crop around multiple points)
     activePoints = [] % list of points to be returned
+    groupPoints = false % group all the input points as a single output
   end
   
   
@@ -238,6 +239,11 @@ classdef movieDataStore4 < matlab.io.Datastore
         end
         % add bottom summed layer to iOut
         iOut(:,:,end+1)=sum(iOut,3);
+
+        % handle groupPoints input
+        if myds.groupPoints==true
+            iOut=repmat(iOut(:,:,end),[1 1 2]);
+        end
         
         imOut{cnt}=iOut; % store
         cnt=cnt+1;
@@ -306,7 +312,7 @@ classdef movieDataStore4 < matlab.io.Datastore
         uv = myds.uvCoordinates{m_id}(frame,:);
         uv = uv(:,sort([myds.activePoints*2-1,myds.activePoints*2]));
         
-        if numel(uv)>2
+        if numel(uv)>2 & myds.groupPoints==false
           disp('movieDataStore.crop is only appropriate for a single uv input')
           return
         end
@@ -364,10 +370,17 @@ classdef movieDataStore4 < matlab.io.Datastore
           continue
         end
         img2=imgr(ry(1):ry(2),rx(1):rx(2),:);
-        uv2=round(uvr-[rx(1),ry(1)]);
+        uv2=round(uvr-repmat([rx(1),ry(1)],1,numel(uvr)/2));
+        uv2(uv2<3)=NaN;
+        uv2(uv2>(blockSize*2-3))=NaN;
         
         iOut=img2(:,:,1)*0;
-        iOut(uv2(2)-2:uv2(2)+2,uv2(1)-2:uv2(1)+2)=1;
+        for uu=1:numel(uv2)/2
+            try
+                iOut(uv2(uu*2)-2:uv2(uu*2)+2,uv2(uu*2-1)-2:uv2(uu*2-1)+2)=1;
+            catch
+            end
+        end
         iOut=imgaussfilt(iOut,2);
         iOut=single(iOut/(max(max(iOut))));
         

@@ -24,6 +24,10 @@ if isnan(info.frameRate) | info.frameRate==0
   info.frameRate=1;
 end
 
+% set default variableTiming
+fn=fieldnames(info);
+
+
 
 end
 

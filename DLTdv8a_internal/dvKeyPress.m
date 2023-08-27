@@ -103,7 +103,7 @@ if (cc=='=' || cc=='-' || cc=='r') && axh~=0
   end
   
   % check for valid movement keys
-elseif cc=='f' || cc=='b' || cc=='F' || cc=='B' || cc=='<' || cc=='>' && axh~=0
+elseif cc=='f' || cc=='b' || cc=='F' || cc=='B' || cc=='<' || cc=='>' || cc=='M' && axh~=0
   fr=round(app.FrameNumberSlider.Value); % get current slider value
   smax=app.FrameNumberSlider.Limits(2); % max slider value
   smin=app.FrameNumberSlider.Limits(1); % min slider value
@@ -148,6 +148,9 @@ elseif cc=='f' || cc=='b' || cc=='F' || cc=='B' || cc=='<' || cc=='>' && axh~=0
         app.FrameNumberSlider.Value=idx(end);
       end
     end
+  elseif cc=='M' % start auto multi-track, exit after
+      keyadvance=2; % set keyadvance variable for DLTautotrack function
+      DLTautotrack3fun(app,app.handles,keyadvance,axn,cp,fr,sp);
   end
   
   % full redraw of the screen
@@ -376,7 +379,7 @@ elseif cc=='J' % bring up joiner interface
     % extract arrays and use nanmean to combine
     m = sp2full(app.xypts(:,(1:2*app.nvid)+(sp-1)*2*app.nvid));
     m(:,:,2) = sp2full(app.xypts(:,(1:2*app.nvid)+(spD-1)*2*app.nvid));
-    m=nanmean(m,3);
+    m=inanmean(m,3);
     m(isnan(m))=0;
     app.xypts(:,(1:2*app.nvid)+(sp-1)*2*app.nvid)=m;
     
@@ -430,6 +433,26 @@ elseif cc=='S' % bring up swap interface
     'Point picker','PromptString',...
     ['Pick a point to swap with point #',num2str(sp)],'listsize',...
     [300,200],'selectionmode','single');
+
+  if ok==true && sp~=selection
+    % get the range of points to swap 
+    def{1}='1';
+    def{2}=num2str(size(app.xypts,1));
+    [rng]=inputdlg({'Start frame of points to swap','End of range to swap'},'Set swap range',1,def);
+    if isempty(rng)==false
+      try
+        numrng(1)=str2num(rng{1});
+        numrng(2)=min([size(app.xypts,1),str2num(rng{2})]);
+      catch
+        beep
+        disp('Point swapping input error')
+        return
+      end
+    else
+      disp('Point swapping cancelled')
+      return
+    end
+  end
   
   if ok==true && sp~=selection
     storeUndo(app);
@@ -438,14 +461,14 @@ elseif cc=='S' % bring up swap interface
     dltrestmp = app.dltres;
     minsp = min([sp,selection]);
     maxsp = max([sp,selection]);
-    app.xypts(:,(1:2*app.nvid)+(minsp-1)*2*app.nvid)=xytmp(:,(1:2*app.nvid)+(maxsp-1)*2*app.nvid);
-    app.xypts(:,(1:2*app.nvid)+(maxsp-1)*2*app.nvid)=xytmp(:,(1:2*app.nvid)+(minsp-1)*2*app.nvid);
+    app.xypts(numrng(1):numrng(2),(1:2*app.nvid)+(minsp-1)*2*app.nvid)=xytmp(numrng(1):numrng(2),(1:2*app.nvid)+(maxsp-1)*2*app.nvid);
+    app.xypts(numrng(1):numrng(2),(1:2*app.nvid)+(maxsp-1)*2*app.nvid)=xytmp(numrng(1):numrng(2),(1:2*app.nvid)+(minsp-1)*2*app.nvid);
     
-    app.dltpts(:,minsp*3-2:minsp*3)=dltpttmp(:,maxsp*3-2:maxsp*3);
-    app.dltpts(:,maxsp*3-2:maxsp*3)=dltpttmp(:,minsp*3-2:minsp*3);
+    app.dltpts(numrng(1):numrng(2),minsp*3-2:minsp*3)=dltpttmp(numrng(1):numrng(2),maxsp*3-2:maxsp*3);
+    app.dltpts(numrng(1):numrng(2),maxsp*3-2:maxsp*3)=dltpttmp(numrng(1):numrng(2),minsp*3-2:minsp*3);
     
-    app.dltres(:,minsp)=dltrestmp(:,maxsp);
-    app.dltres(:,maxsp)=dltrestmp(:,minsp);
+    app.dltres(numrng(1):numrng(2),minsp)=dltrestmp(numrng(1):numrng(2),maxsp);
+    app.dltres(numrng(1):numrng(2),maxsp)=dltrestmp(numrng(1):numrng(2),minsp);
     
     fullRedraw(app);
     

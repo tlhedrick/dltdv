@@ -107,7 +107,7 @@ if seltype==1 && autoT>1
   end
 elseif seltype==2 && autoT==5
   keyadvance=2; % set keyadvance variable for DLTautotrack function
-  axn=1; % default axis
+  %axn=1; % default axis
   DLTautotrack3fun(app,app.handles,keyadvance,axn,cp,fr,sp);
   
   % full redraw of the screen
