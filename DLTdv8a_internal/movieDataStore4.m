@@ -315,7 +315,13 @@ classdef movieDataStore4 < matlab.io.Datastore
         if numel(uv)>2 & myds.groupPoints==false
           disp('movieDataStore.crop is only appropriate for a single uv input')
           return
+        elseif numel(uv)>2 & myds.groupPoints==true
+          % pick which uv pair to use
+          idx=find(isfinite(uv(1:2:end)));
+          idx=randsample(idx,1);
+          uv=uv(idx*2-1:idx*2);
         end
+         
         
         % rotate image & coordinates
         if myds.AugmentData
