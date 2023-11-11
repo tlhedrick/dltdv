@@ -72,7 +72,7 @@ switch call
   case {99} % Initialize the GUI
     
     fprintf('\n')
-    disp('DLTcal8 (updated February 21, 2022)')
+    disp('DLTcal8 (updated November 10, 2023)')
     fprintf('\n')
     disp('Visit https://biomech.web.unc.edu/ for more information,')
     disp('tutorials, sample data & updates to this program.')
@@ -336,7 +336,7 @@ switch call
       ['Select the calibration image files. (Ctrl-click to pick',...
       ' several)'],'MultiSelect','on');
     
-    if calfnames==0 % user pressed cancel
+    if isa(calfnames,'double') % user pressed cancel
         set(h(1),'Userdata',uda);
         return
     end
@@ -344,10 +344,11 @@ switch call
     if iscell(calfnames)==0 % convert strings to cells
       uda.calfnames={calfnames};
     else
-      for i=2:numel(calfnames)
-        uda.calfnames{i-1}=calfnames{i};
-        uda.calfnames{end+1}=calfnames{1};
-      end
+        uda.calfnames=calfnames;
+      % for i=2:numel(calfnames) % WTF??
+      %   uda.calfnames{i-1}=calfnames{i};
+      %   uda.calfnames{end+1}=calfnames{1};
+      % end
     end
     
     % sort the image file names - Matlab's multi-select does an uncertain
@@ -374,12 +375,13 @@ switch call
     %
     % set the slider size
     if length(uda.calfnames)>1
-      set(h(5),'Max',length(uda.calfnames),'Min',1,'Value',1,...
+    set(h(5),'Max',length(uda.calfnames),'Min',1,'Value',1,...
         'SliderStep',[1/(length(uda.calfnames)-1) ...
         1/(length(uda.calfnames)-1)]);
-      set(h(5),'Enable','on'); % turn slider on
+    set(h(5),'Enable','on'); % turn slider on
     else
-      set(h(5),'Enable','off') % turn off the slider if only 1 image
+        set(h(5),'Enable','off') % turn off the slider if only 1 image
+        set(h(5),'Max',1)
     end
     
     uda.numpts=size(uda.specdata,1); % number of pts to digitize per camera
@@ -394,6 +396,7 @@ switch call
     end
     ptstring(1,uda.numpts*4-3:uda.numpts*4-1)=sprintf('%3d',uda.numpts);
     set(h(32),'String',ptstring);
+    set(h(32),'value',uda.sp);
     
     % read & plot the first image
     im=calimread([uda.calpname,uda.calfnames{1}],true);
