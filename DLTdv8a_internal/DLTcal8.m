@@ -1500,7 +1500,7 @@ if ischar(fname)
   elseif strcmpi(fname(end-4:end),'.cine') % vision research cine
     mov.cdata=cineRead(fname,frame);
   elseif strcmpi(fname(end-3:end),'.mrf') % IDT/Redlake multipage raw
-    mov.cdata=mrfRead(fname,frame);
+    mov.cdata=mrfRead_v2(fname,frame);
   else
     mov=[];
     disp('mediaRead: bad file extension')

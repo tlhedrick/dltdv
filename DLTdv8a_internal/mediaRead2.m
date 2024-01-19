@@ -22,7 +22,7 @@ if ischar(fname) % for mrf, cih or cine files
   if strcmpi(ext,'.cin') || strcmpi(ext,'.cine') % vision research cine
     mov.cdata=cineRead2(fname,frame);
   elseif strcmpi(ext,'.mrf') % IDT/Redlake multipage raw
-    mov.cdata=mrfRead(fname,frame);
+    mov.cdata=mrfRead_v2(fname,frame);
   elseif strcmpi(ext,'.cih') % Photron Mraw raw
     mov.cdata=cihRead(fname,frame);
   else

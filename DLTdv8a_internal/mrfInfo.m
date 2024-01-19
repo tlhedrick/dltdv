@@ -45,13 +45,12 @@ if strcmpi(fileName(end-3:end),'.mrf')
   % release the file handle
   fclose(f1);
   
-  % variable timing not possible in mrf files
-  info.variableTiming=false;
-  
 else
   fprintf('%s does not appear to be an mrf file.',fileName)
   info=[];
 end
 
+% warn about bad framerate
+if info.frameRate==1
+    disp('mrfInfo : notice : mrf file framerate may not have been detected correctly')
 end
-
