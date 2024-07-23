@@ -17,7 +17,8 @@ end
 
 fp = [400,400];          % figure position (lower left corner x,y)
 w = 200;                 % figure width
-h = 15*numel(pfxs)+200;  % figure height
+%h = 15*numel(pfxs)+200;  % figure height
+h = 215; % figure height without the broken size adjustment [2024-03-01]
 fp = [fp(1) fp(2) w h];  % set full figure position
 
 % set figure properties
