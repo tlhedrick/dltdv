@@ -108,7 +108,7 @@ elseif cc=='f' || cc=='b' || cc=='F' || cc=='B' || cc=='<' || cc=='>' || cc=='M'
   smax=app.FrameNumberSlider.Limits(2); % max slider value
   smin=app.FrameNumberSlider.Limits(1); % min slider value
   axn=axh-300; % axis number
-  stepSize=app.StepsizeEditField.Value; % step size
+  stepSize=app.FrameadvancestepsizeEditField.Value; % step size
   bigStepSize=app.BigstepsizeEditField.Value; % big step size
 
   if isnan(axn)
@@ -182,7 +182,7 @@ elseif cc=='.' || cc==',' % change point
   else
     % do nothing
   end
-  app.CurrentpointDropDown.Value=num2str(app.sp); % update menu
+  app.CurrentpointDropDown.Value=app.sp; % update menu
   
   pt=app.xypts(fr,(vnum*2-1:vnum*2)+(app.sp-1)*2*app.nvid);
   
@@ -330,28 +330,15 @@ elseif cc=='D' % remove current point from the data array
     beep
     disp('You need to have 2 or more points defined to remove one.')
   else
-    [button] = questdlg(['Really remove point #',num2str(sp),' from the data?'],'Really?');
+    [button] = questdlg(sprintf('Remove point %s from the data?',app.pointNames{sp}),'Really?');
+    %[button] = questdlg(['Really remove point #',num2str(sp),' from the data?'],'Really?');
     
     if strcmp(button,'Yes')
       % store backup for undo
       storeUndo(app);
-      
-      % update number of points
-      app.numpts=app.numpts-1;
-      
-      % update points pull-down menu
-      ptstring={};
-      for i=1:app.numpts
-        ptstring{i}=num2str(i);
-      end
-      app.CurrentpointDropDown.Items=ptstring;
-      app.CurrentpointDropDown.Value=ptstring{max([1,sp-1])};
-      app.sp=max([1,sp-1]);
-      
-      % update the data matrices by removing the deleted point
-      app.xypts(:,(1:2*app.nvid)+(sp-1)*2*app.nvid)=[];
-      app.dltpts(:,sp*3-2:sp*3)=[];
-      app.dltres(:,sp)=[];
+
+      % delete the point
+      dvDeletePoint(app,sp)
       
       fullRedraw(app);
       disp('Point deleted.')
@@ -361,60 +348,23 @@ elseif cc=='D' % remove current point from the data array
   end
   
 elseif cc=='J' % bring up joiner interface
-  ptList=[];
+  ptList=cell([]);
   ptSeq=(1:app.numpts);
   for i=1:numel(ptSeq)
-    ptList{i}=['Point #',num2str(i)];
+    %ptList{i}=['Point #',num2str(i)];
+    ptList(i)=app.pointNames(i);
   end
   [selection,ok]=listdlg('liststring',ptList,'Name',...
     'Point picker','PromptString',...
-    ['Pick a point to join with point #',num2str(sp)],'listsize',...
+    ['Pick a point to join with point ',app.pointNames{sp}],'listsize',...
     [300,200],'selectionmode','single');
   
   if ok==true && sp~=selection
     spD=max([sp,selection]); % will be deleted
     sp=min([sp,selection]); % will be kept
     storeUndo(app);
-    
-    % extract arrays and use nanmean to combine
-    m = sp2full(app.xypts(:,(1:2*app.nvid)+(sp-1)*2*app.nvid));
-    m(:,:,2) = sp2full(app.xypts(:,(1:2*app.nvid)+(spD-1)*2*app.nvid));
-    m=inanmean(m,3);
-    m(isnan(m))=0;
-    app.xypts(:,(1:2*app.nvid)+(sp-1)*2*app.nvid)=m;
-    
-    % delete old points
-    app.xypts(:,(1:2*app.nvid)+(spD-1)*2*app.nvid)=[];
-    app.dltpts(:,spD*3-2:spD*3)=[];
-    app.dltres(:,spD)=[];
-    
-    app.numpts=app.numpts-1; % update number of points
-    
-    % update the drop-down menu
-    ptstring={};
-    for i=1:app.numpts
-      ptstring{i}=num2str(i);
-    end
-    app.CurrentpointDropDown.Items=ptstring;
-    app.CurrentpointDropDown.Value=ptstring{app.sp};
-    
-    % Compute 3D coordinates + residuals
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    if app.dlt
-      %added dedistortion (Baier 1/16/06) (modified Hedrick 6/23/08)
-      udist=m;
-      udist(udist==0)=NaN;
-      for j=1:size(udist,2)/2
-        if isempty(app.camud{j})==false
-          udist(:,j*2-1:j*2)=applyTform(app.camud{j},udist(:,j*2-1:j*2));
-        end
-      end
-      %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-      [rawResults,rawRes]=dlt_reconstruct_v2(app.dltcoef,udist);
-      app.dltpts(:,sp*3-2:sp*3)=full2sp(rawResults(:,1:3));
-      app.dltres(:,sp)=full2sp(rawRes);
-    end
-    
+    dvJoinPoints(app,sp,spD); % run the joiner operation
+      
     fullRedraw(app);
     
   elseif sp==selection
@@ -424,14 +374,14 @@ elseif cc=='J' % bring up joiner interface
   end
   
 elseif cc=='S' % bring up swap interface
-  ptList=[];
+  ptList=cell([]);
   ptSeq=(1:app.numpts);
   for i=1:numel(ptSeq)
-    ptList{i}=['Point #',num2str(i)];
+    ptList(i)=app.pointNames(i);
   end
   [selection,ok]=listdlg('liststring',ptList,'Name',...
     'Point picker','PromptString',...
-    ['Pick a point to swap with point #',num2str(sp)],'listsize',...
+    ['Pick a point to swap with point ',app.pointNames(sp)],'listsize',...
     [300,200],'selectionmode','single');
 
   if ok==true && sp~=selection
@@ -456,23 +406,11 @@ elseif cc=='S' % bring up swap interface
   
   if ok==true && sp~=selection
     storeUndo(app);
-    xytmp = app.xypts;
-    dltpttmp = app.dltpts;
-    dltrestmp = app.dltres;
-    minsp = min([sp,selection]);
-    maxsp = max([sp,selection]);
-    app.xypts(numrng(1):numrng(2),(1:2*app.nvid)+(minsp-1)*2*app.nvid)=xytmp(numrng(1):numrng(2),(1:2*app.nvid)+(maxsp-1)*2*app.nvid);
-    app.xypts(numrng(1):numrng(2),(1:2*app.nvid)+(maxsp-1)*2*app.nvid)=xytmp(numrng(1):numrng(2),(1:2*app.nvid)+(minsp-1)*2*app.nvid);
-    
-    app.dltpts(numrng(1):numrng(2),minsp*3-2:minsp*3)=dltpttmp(numrng(1):numrng(2),maxsp*3-2:maxsp*3);
-    app.dltpts(numrng(1):numrng(2),maxsp*3-2:maxsp*3)=dltpttmp(numrng(1):numrng(2),minsp*3-2:minsp*3);
-    
-    app.dltres(numrng(1):numrng(2),minsp)=dltrestmp(numrng(1):numrng(2),maxsp);
-    app.dltres(numrng(1):numrng(2),maxsp)=dltrestmp(numrng(1):numrng(2),minsp);
+    dvSwapPoints(app,sp,selection,numrng);
     
     fullRedraw(app);
     
-    disp(['Points ',num2str(sp),' and ',num2str(selection),' swapped.'])
+    disp(['Points ',app.pointNames{sp},' and ',app.pointNames{selection},' swapped.'])
     
   elseif sp==selection
     disp('It does not make any sense to swap a point with itself.')

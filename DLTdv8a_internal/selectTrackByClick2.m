@@ -23,7 +23,7 @@ sp=pnums(idx(1));
 app.sp=sp;
 
 % update pull-down menu
-app.CurrentpointDropDown.Value=num2str(sp);
+app.CurrentpointDropDown.Value=sp;
 
 % get new xy location in the frame in question (for magnified plot)
 pt=app.xypts(fr,(vnum*2-1:vnum*2)+(sp-1)*2*app.nvid);

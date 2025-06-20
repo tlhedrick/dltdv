@@ -95,9 +95,14 @@ if frameNum<=info.NumFrames && frameNum>0 && exist('cdata','var')==false
   end
   
 else
-  % generate exception
-  errS = sprintf('%s has %.0f frames; you requested frame %.0f', ...
-    fileName,info.NumFrames,frameNum);
-  err = MException('cineRead2:OutOfRange',errS);
+  % generate exception - fixed on 2025-01-10 to generate the error string
+  % in MException so any control characters in the resulting string don't
+  % get reinterpreted when generating the exception
+  err = MException('cineRead2:OutOfRange','%s has %.0f frames; you requested frame %.0f',fileName,info.NumFrames,frameNum);
   throw(err);
+
+
+
+
+
 end

@@ -39,7 +39,7 @@ if seltype == 1 || seltype == 3 % left or right click
   app.xypts(fr,axn*2+(sp-1)*2*app.nvid)=cp(1,2); % set y point
   
   % DLT update if 2 or more xy pts
-  if sum(app.xypts(fr,(1:2*app.nvid)+(sp-1)*2*app.nvid)~=0) >= 4 && app.dlt==1
+  if (sum(app.xypts(fr,(1:2*app.nvid)+(sp-1)*2*app.nvid)~=0) >= 4 && app.dlt==1) || app.dlt2d==true
     % subframe interpolation
     try
       xy=sp2full(app.xypts(fr-1:fr+1,(1:2*app.nvid)+(sp-1)*2*app.nvid));
@@ -88,7 +88,7 @@ end % end of click selection type processing for normal & alt clicks
 % alt = right click
 % extend = middle click or left+right
 if seltype==1 && autoT>1
-    stepSize=app.StepsizeEditField.Value;
+    stepSize=app.FrameadvancestepsizeEditField.Value;
   if autoT==2 && fr+stepSize<=app.FrameNumberSlider.Limits(2) % auto-advance
     
     app.FrameNumberSlider.Value=fr+stepSize; % current frame + stepSize

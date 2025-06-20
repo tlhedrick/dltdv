@@ -13,6 +13,7 @@ function [] = DLTcal8(varargin)
 % Version 5 - Ty Hedrick 7/12/10
 % Version 8 - Ty Hedrick 2019-10-25
 %   Ty Hedrick 2022-02-21: various small bugfixes
+%   Ty Hedrick 2025-05-16: integrate 2D DLT coefficient calculation
 
 if nargin==0 % no inputs, run the gui initialization routine
   
@@ -26,7 +27,7 @@ if nargin==0 % no inputs, run the gui initialization routine
     return
   end
   
-  % check to make sure that mmreader is available
+  % check to make sure that mmreader or VideoReader is available
   if exist('mmreader')~=2 && exist('VideoReader')~=2
     beep
     disp('DLTcal8 requires mmreader or VideoReader to read AVIs or other')
@@ -38,7 +39,7 @@ if nargin==0 % no inputs, run the gui initialization routine
     disp('that has the aviread function.')
   end
   
-  call=99; % go creat the GUI (see the Switch statement below)
+  call=99; % go create the GUI (see the Switch statement below)
   
 elseif nargin==1 % assume a switchyard call but no data
   call=varargin{1};
@@ -72,7 +73,7 @@ switch call
   case {99} % Initialize the GUI
     
     fprintf('\n')
-    disp('DLTcal8 (updated November 10, 2023)')
+    disp('DLTcal8 (updated June 17, 2025)')
     fprintf('\n')
     disp('Visit https://biomech.web.unc.edu/ for more information,')
     disp('tutorials, sample data & updates to this program.')
@@ -174,11 +175,11 @@ switch call
       'String','DLT calibration type:','Style','text',...
       'Tag','text15');
     
-    menuString='11 parameter | modified 11 parameter';
+    h25menustring='11 parameter | modified 11 parameter';
     h(25) = uicontrol('Parent',h(1),... % Calibration type menu
       'Units','characters',...
       'HorizontalAlignment','left','Position',[7 top-12.2 24.6 1.3],...
-      'String',menuString,'Style','popupmenu',...
+      'String',h25menustring,'Style','popupmenu',...
       'Value',1,'Tag','text16');
     
     h(27) = uicontrol('Parent',h(1),... % DLT average residuals
@@ -297,13 +298,29 @@ switch call
           return
       end
       specdata=dlmread([specpath,specfile],',',1,0); % read the cal. file
-      if size(specdata,2)==3 % got a good spec file
+      if size(specdata,2)==3 % got a good 3D spec file
         uda.specdata=specdata; % put it in userdata
         uda.specpath=specpath; % keep the path too
         
         % tell the user
         msg=sprintf(...
-          'Loaded a %d point calibration object specification file.',...
+          'Loaded a %d point 3D calibration object specification file.',...
+          size(specdata,1));
+        uiwait(msgbox(msg,'Success'));
+        % write back any modifications to the main figure userdata
+        set(h(1),'Userdata',uda);
+        
+        cd(specpath); % change to spec path directory
+      elseif size(specdata,2)==2 % got a 2D spec file
+          uda.handles(25).Value=1;
+          uda.handles(25).String='8 parameter';
+          
+        uda.specdata=specdata; % put it in userdata
+        uda.specpath=specpath; % keep the path too
+        
+        % tell the user
+        msg=sprintf(...
+          'Loaded a %d point 2D calibration object specification file.',...
           size(specdata,1));
         uiwait(msgbox(msg,'Success'));
         % write back any modifications to the main figure userdata
@@ -311,8 +328,7 @@ switch call
         
         cd(specpath); % change to spec path directory
       else
-        msg=['The calibration object specification file must have 3 ', ...
-          'data columns. Aborting.'];
+        msg=sprintf('The calibration object specification file must have 3 (for 3D) or 2 (for 2D) data columns. Instead, it has %.0f. Exiting.',size(specdata,2));
         msgbox(msg,'Error','error');
         return
       end
@@ -601,7 +617,7 @@ switch call
       smin=get(h(5),'Min'); % min slider value
       if smin==0, return, end % avoid edge case
       axn=find(h==axh)-39; % axis number
-      if isnan(axn),
+      if isnan(axn)
         disp('Error: The mouse pointer is not in an axis.')
         return
       end
@@ -622,7 +638,7 @@ switch call
       updateSmallPlot(h,axn,cp);
       
     elseif cc=='.' || cc==',' % change point
-      ptnum=numel(get(h(32),'String'))/2; % # of points defined
+      ptnum=size(uda.specdata,1); % # of points defined
       ptval=get(h(32),'Value'); % selected point
       
       if cc==',' && ptval>1 % decrease point value if possible
@@ -767,8 +783,8 @@ switch call
     end
     
     % enable computation buttons if appropriate
-    goodpts=find(isnan(uda.xypts(:,uda.cNum*2))==0);
-    if length(goodpts)>=6
+    goodpts=find(~isnan(uda.xypts(:,uda.cNum*2)));
+    if (length(goodpts)>=6 & size(uda.specdata,2)==3) | (length(goodpts)>=4 & size(uda.specdata,2)==2)
       set(h(33),'Enable','on')
       set(h(36),'Enable','on')
     else
@@ -851,8 +867,7 @@ switch call
     %% case 6 - load saved data
   case {6} % load previously saved points
     
-    [fname1,pname1]=uigetfile('*xypts*.csv',...
-      'Select the [prefix]xypts.csv file');
+    [fname1,pname1]=uigetfile('*.csv','Select the [prefix]_xypts.csv file to load');
     pause(0.1); % make sure that the uigetfile ran (MATLAB bug workaround)
     pfix=[pname1,fname1];
     
@@ -878,10 +893,14 @@ switch call
         tempData=tempData(:,1:2);
       end
       uda.xypts(:,uda.cNum*2-1:uda.cNum*2)=tempData;
+
+      % note results
+      msgbox('Successfully loaded clicked calibration point data.','Success','modal')
       
       % enable computation buttons if appropriate
       goodpts=find(isnan(tempData(:,1))==0);
-      if length(goodpts)>=9
+      if (size(uda.specdata,2)==3 & numel(goodpts)>=6) | ...
+          (size(uda.specdata,2)==2 & numel(goodpts)>=4)
         set(h(33),'Enable','on')
         set(h(36),'Enable','on')
       else
@@ -899,35 +918,55 @@ switch call
     if uda.cNum==1
       uda.coefs=[];
     end
-    
-    set(gcf,'Pointer','watch')
+
+    set(uda.handles(1),'Pointer','watch')
     data=uda.xypts(:,uda.cNum*2-1:uda.cNum*2);
     goodpts=find(isnan(data(:,1))==0);
-    
-    if length(goodpts)<6
-      msgbox(['You should use at least 6 digitized points for 11',...
-        'parameter DLT'])
+
+    % do we have enough data?
+    if size(uda.specdata,2)==2 & numel(goodpts)==4
+      mmsg=sprintf('You have 4 points defined, exactly enough for 2D DLT but you will see a MATLAB warning about a singular matrix and no RMSE can be computed.');
+      msgbox(mmsg)
+      disp(mmsg)
+    elseif size(uda.specdata,2)==2 & numel(goodpts)<4
+      mmsg=sprintf('You need at least 4 points for 2D DLT, you only have %.0f defined.',numel(goodpts));
+      msgbox(mmsg)
+      disp(mmsg)
+      return
+    elseif size(uda.specdata,2)==3 & numel(goodpts)<6
+      mmsg=sprintf('You need at least 6 points for 3D DLT, you only have %.0f defined.',numel(goodpts));
+      msgbox(mmsg)
+      disp(mmsg)
       return
     end
     
-    if get(h(25),'Value')==1 % 11 parameter DLT
+    % do the calculation
+    if size(uda.specdata,2)==3 % 3D
+      if get(h(25),'Value')==1 % 11 parameter DLT
+        [uda.coefs(:,uda.cNum),uda.avgres(uda.cNum)]= ...
+          dlt_computeCoefficients(uda.specdata,data);
+      else % modified DLT
+        [uda.coefs(:,uda.cNum),uda.avgres(uda.cNum)]= ...
+          mdlt2(uda.specdata,data);
+      end
+      
+    else % 2D
       [uda.coefs(:,uda.cNum),uda.avgres(uda.cNum)]= ...
-        dlt_computeCoefficients(uda.specdata,data);
-    else % modified DLT
-      [uda.coefs(:,uda.cNum),uda.avgres(uda.cNum)]= ...
-        mdlt2(uda.specdata,data);
+          dlt2d_computeCoefficients(uda.specdata,data);
     end
-    set(gcf,'Pointer','arrow')
-    
+    set(uda.handles(1),'Pointer','arrow')
+
     % update the user interface
     set(h(27),'String',sprintf('Calibration \nresidual: %0.3f',...
       uda.avgres(uda.cNum)));
     
     % write back any modifications to the main figure userdata
     set(h(1),'Userdata',uda);
-    
+
+    % enable adding another camera
     set(h(6),'Enable','on'); % enable the "calibrate another camera" option
     set(h(6),'String','Add a camera')
+
     
     %% case 8 - DLT error analysis
   case {8} % DLT error analysis
@@ -954,11 +993,16 @@ switch call
         rescheck(i,2)=NaN; % no need to process
       else
         ptstemp(i,1:2)=NaN; % set to NaN and recalculate
-        if get(h(25),'Value')==1 % standard DLT
-          [coefs,rescheck(i,2)]=dlt_computeCoefficients(uda.specdata,...
-            ptstemp);
-        else % modified DLT
-          [coefs,rescheck(i,2)]=mdlt2(uda.specdata,ptstemp);
+
+        if size(uda.specdata,2)==3
+          if get(h(25),'Value')==1 % standard DLT
+            [coefs,rescheck(i,2)]=dlt_computeCoefficients(uda.specdata,...
+              ptstemp);
+          else % modified DLT
+            [coefs,rescheck(i,2)]=mdlt2(uda.specdata,ptstemp);
+          end
+        else % 2D DLT
+          [coefs,rescheck(i,2)]=dlt2d_computeCoefficients(uda.specdata,ptstemp);
         end
       end
     end
@@ -1707,3 +1751,88 @@ uv(:,1)=(xyz(:,1).*c(1)+xyz(:,2).*c(2)+xyz(:,3).*c(3)+c(4))./ ...
 uv(:,2)=(xyz(:,1).*c(5)+xyz(:,2).*c(6)+xyz(:,3).*c(7)+c(8))./ ...
   (xyz(:,1).*c(9)+xyz(:,2).*c(10)+xyz(:,3).*c(11)+1);
 
+function [uv] = dlt2d_inverse(c,xy)
+
+% function [uv] = dlt2d_inverse(c,xy)
+%
+% This function reconstructs the pixel (i.e. uv) coordinates of a 2D 
+% (i.e. xy) coordinate as seen by the camera specificed by 2D DLT 
+% coefficients c
+%
+% Inputs:
+%  c - 8 DLT coefficients for the camera, [8,1] array
+%  xy - [x,y] coordinates over f frames,[f,2] array
+%
+% Outputs:
+%  uv - pixel coordinates in each frame, [f,2] array
+%
+% Ty Hedrick
+
+% write the matrix solution out longhand for Matlab vector operation over
+% all points at once
+
+% 2D
+uv(:,1)=(xy(:,1).*c(1)+xy(:,2).*c(2)+c(3))./ (xy(:,1).*c(7)+xy(:,2).*c(8)+1);
+uv(:,2)=(xy(:,1).*c(4)+xy(:,2).*c(5)+c(6))./ (xy(:,1).*c(7)+xy(:,2).*c(8)+1);
+
+function  [c,rmse] = dlt2d_computeCoefficients(frame,camPts)
+
+% function  [c,rmse] = dlt2d_computeCoefficients(frame,camPts)
+%
+% A basic implementation of 8 parameter (i.e. 2D) DLT
+%
+% Inputs:
+%  frame - an array of x,y calibration point coordinates
+%  camPts - an array of u,v pixel coordinates from the camera
+%
+% Outputs:
+%  c - the 11 DLT coefficients
+%  rmse - root mean square error for the reconstruction; units = pixels
+%
+% Notes - frame and camPts must have the same number of rows.  A minimum of
+% 4 rows are required to compute the coefficients.  The frame points must
+% not all lie within a line, and are assumed to lie in a plane (i.e. Z = 0)
+%
+% Ty Hedrick
+
+% check for any NaN rows (missing data) in the frame or camPts
+ndx=find(sum(isnan([frame,camPts]),2)>0);
+
+% remove any missing data rows
+frame(ndx,:)=[];
+camPts(ndx,:)=[];
+
+% re-arrange the frame matrix to facilitate the linear least squares
+% solution
+M=zeros(size(frame,1)*2,8);
+for i=1:size(frame,1)
+  M(2*i-1,1:2)=frame(i,1:2);
+  M(2*i-1,3)=1;
+  M(2*i-1,7:8)=frame(i,1:2).*-camPts(i,1);
+
+  M(2*i,4:5)=frame(i,1:2);
+  M(2*i,6)=1;
+  M(2*i,7:8)=frame(i,1:2).*-camPts(i,2);
+end
+
+  % M(2*i-1,1:3)=frame(i,1:3);
+  % M(2*i-1,4)=1;
+  % M(2*i-1,9:11)=frame(i,1:3).*-camPts(i,1);
+  % 
+  % M(2*i,5:7)=frame(i,1:3);
+  % M(2*i,8)=1;
+  % M(2*i,9:11)=frame(i,1:3).*-camPts(i,2);
+
+% re-arrange the camPts array for the linear solution
+camPtsF=reshape(flipud(rot90(camPts)),numel(camPts),1);
+
+% get the linear solution to the 8 parameters
+c=linsolve(M,camPtsF);
+
+% compute the position of the frame in u,v coordinates given the linear
+% solution from the previous line
+Muv=dlt2d_inverse(c,frame);
+
+% compute the root mean square error between the ideal frame u,v and the
+% recorded frame u,v
+rmse=(sum(sum((Muv-camPts).^2))./numel(camPts))^0.5;

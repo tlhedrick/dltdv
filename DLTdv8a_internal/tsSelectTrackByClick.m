@@ -37,7 +37,7 @@ sp=sp(1);
 
 % update points pull-down menu
 app.sp=sp;
-app.CurrentpointDropDown.Value=num2str(app.sp); % update menu
+app.CurrentpointDropDown.Value=app.sp; % update menu
 
 % get new xy location in the frame in question (for magnified plot)
 pt=app.xypts(fr,(app.lastvnum*2-1:app.lastvnum*2)+(sp-1)*2*app.nvid);

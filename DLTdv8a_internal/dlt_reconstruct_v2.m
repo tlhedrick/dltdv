@@ -17,54 +17,64 @@ function [xyz,rmse] = dlt_reconstruct_v2(c,camPts)
 %
 % _v2 - uses "real" rmse instead of algebraic rmse
 %
+% 2025-02-17: added check for 2D coefficients (i.e. size(c)=[8,1])
+%
 % Ty Hedrick
 
-% number of frames
-nFrames=size(camPts,1);
+if size(c,1)==8 % 2D
+  [xy]=dlt2d_reconstruct(c,camPts);
+  xyz=[xy,xy(:,1)*0]; % pad Z with a column of zeros
+  rmse=xy(:,1)*NaN; % no RMSE for 1-camera 2D dlt
 
-% number of cameras
-nCams=size(camPts,2)/2;
+else % 3D
 
-% setup output variables
-xyz(1:nFrames,1:3)=NaN;
-rmse(1:nFrames,1)=NaN;
+  % number of frames
+  nFrames=size(camPts,1);
 
-% process each frame
-for i=1:nFrames
-  
-  % get a list of cameras with non-NaN [u,v]
-  cdx=find(isnan(camPts(i,1:2:nCams*2))==false);
-  
-  % if we have 2+ cameras, begin reconstructing
-  if numel(cdx)>=2
-    
-    % initialize least-square solution matrices
-    m1=[];
-    m2=[];
-    
-    m1(1:2:numel(cdx)*2,1)=camPts(i,cdx*2-1).*c(9,cdx)-c(1,cdx);
-    m1(1:2:numel(cdx)*2,2)=camPts(i,cdx*2-1).*c(10,cdx)-c(2,cdx);
-    m1(1:2:numel(cdx)*2,3)=camPts(i,cdx*2-1).*c(11,cdx)-c(3,cdx);
-    m1(2:2:numel(cdx)*2,1)=camPts(i,cdx*2).*c(9,cdx)-c(5,cdx);
-    m1(2:2:numel(cdx)*2,2)=camPts(i,cdx*2).*c(10,cdx)-c(6,cdx);
-    m1(2:2:numel(cdx)*2,3)=camPts(i,cdx*2).*c(11,cdx)-c(7,cdx);
-    
-    m2(1:2:numel(cdx)*2,1)=c(4,cdx)-camPts(i,cdx*2-1);
-    m2(2:2:numel(cdx)*2,1)=c(8,cdx)-camPts(i,cdx*2);
-    
-    % get the least squares solution to the reconstruction
-    xyz(i,1:3)=linsolve(m1,m2);
-    
-    %     % compute ideal [u,v] for each camera
-    %     uv=m1*xyz(i,1:3)';
-    %
-    %     % compute the number of degrees of freedom in the reconstruction
-    %     dof=numel(m2)-3;
-    %
-    %     % estimate the root mean square reconstruction error
-    %     rmse(i,1)=(sum((m2-uv).^2)/dof)^0.5;
+  % number of cameras
+  nCams=size(camPts,2)/2;
+
+  % setup output variables
+  xyz(1:nFrames,1:3)=NaN;
+  rmse(1:nFrames,1)=NaN;
+
+  % process each frame
+  for i=1:nFrames
+
+    % get a list of cameras with non-NaN [u,v]
+    cdx=find(isnan(camPts(i,1:2:nCams*2))==false);
+
+    % if we have 2+ cameras, begin reconstructing
+    if numel(cdx)>=2
+
+      % initialize least-square solution matrices
+      m1=[];
+      m2=[];
+
+      m1(1:2:numel(cdx)*2,1)=camPts(i,cdx*2-1).*c(9,cdx)-c(1,cdx);
+      m1(1:2:numel(cdx)*2,2)=camPts(i,cdx*2-1).*c(10,cdx)-c(2,cdx);
+      m1(1:2:numel(cdx)*2,3)=camPts(i,cdx*2-1).*c(11,cdx)-c(3,cdx);
+      m1(2:2:numel(cdx)*2,1)=camPts(i,cdx*2).*c(9,cdx)-c(5,cdx);
+      m1(2:2:numel(cdx)*2,2)=camPts(i,cdx*2).*c(10,cdx)-c(6,cdx);
+      m1(2:2:numel(cdx)*2,3)=camPts(i,cdx*2).*c(11,cdx)-c(7,cdx);
+
+      m2(1:2:numel(cdx)*2,1)=c(4,cdx)-camPts(i,cdx*2-1);
+      m2(2:2:numel(cdx)*2,1)=c(8,cdx)-camPts(i,cdx*2);
+
+      % get the least squares solution to the reconstruction
+      xyz(i,1:3)=linsolve(m1,m2);
+
+      %     % compute ideal [u,v] for each camera
+      %     uv=m1*xyz(i,1:3)';
+      %
+      %     % compute the number of degrees of freedom in the reconstruction
+      %     dof=numel(m2)-3;
+      %
+      %     % estimate the root mean square reconstruction error
+      %     rmse(i,1)=(sum((m2-uv).^2)/dof)^0.5;
+    end
   end
-end
 
-% get actual rmse
-[rmse] = rrmse(c,camPts,xyz);
+  % get actual rmse
+  [rmse] = rrmse(c,camPts,xyz);
+end

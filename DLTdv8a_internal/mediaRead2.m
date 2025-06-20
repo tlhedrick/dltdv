@@ -13,6 +13,13 @@ if ischar(fname)
     % turn the filename into an videoreader object for videoreader
     % file types
     fname=VideoReader(fname);
+
+    % check for a valid framerate
+    if isnan(fname.FrameRate) || fname.FrameRate<=0
+      disp('mediaRead2: Mathworks VideoReader component detected an invalid framerate. Please re-encode your video.')
+      mov=[];
+      return
+    end
   end
 end
 

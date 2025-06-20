@@ -1,8 +1,11 @@
 function [info]=mediaInfo(fname)
 
-% function [info]=mediaInfo(fname);
+% function [info]=mediaInfo(fname)
 %
-% Wrapper which uses aviinfo or cineInfo depending on which is appropriate.
+% Outer wrapper for media (i.e. video) information gathering. Calls
+% mmFileInfo2, cineInfo, mrfInfo, or cihInfo as indicated by file
+% extension. mmFileInfo2 is itself a VideoReader wrapper for formats
+% supported by MATLAB through the local operating system libraries.
 
 if strcmpi(fname(end-3:end),'.avi') || strcmpi(fname(end-3:end),'.mp4') || strcmpi(fname(end-3:end),'.mov')
   info=mmFileInfo2(fname);
@@ -46,7 +49,7 @@ info.NumFrames=round(obj.FrameRate*obj.Duration);
 info.compression = obj.VideoCompression;
 info.frameRate = obj.FrameRate;
 
-% check for variable frame timing
+% check for variable frame timing and a long end frame if possible
 if info.NumFrames>4 & ismethod(obj,'readFrame')
   for i=1:5
     fTimes(i,1)=obj.CurrentTime;
@@ -61,4 +64,35 @@ if info.NumFrames>4 & ismethod(obj,'readFrame')
 else
   info.variableTiming=false;
 end
+
+
+% check for long frames at the end
+if info.NumFrames>24 & ismethod(obj,'readFrame')
+  obj.CurrentTime=obj.Duration-(1/obj.FrameRate)*20;
+  timeStack=[];
+  kg=true;
+  try
+      while kg
+          obj.readFrame();
+          timeStack=[timeStack;obj.CurrentTime];
+      end
+  catch
+    % nothing - we get here when there are no frames left to read
+  end
+
+  % look at inter-frame time differences and find the last difference that
+  % matches the expected frameRate
+  tsd=diff(timeStack);
+  idx=find(abs(tsd-1/obj.FrameRate)<(1/obj.FrameRate)*0.05);
+  if numel(idx)>0
+    realDuration=timeStack(idx(end)+1);
+    nNumFrames=round(obj.FrameRate*realDuration);
+    if nNumFrames~=info.NumFrames
+        info.NumFrames=nNumFrames;
+        fprintf('mediaInfo: ignoring dummy frames at the end of %s\n',fname)
+    end
+  end
+
+end
+
 end
