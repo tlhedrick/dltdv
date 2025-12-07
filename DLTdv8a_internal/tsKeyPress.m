@@ -35,7 +35,7 @@ elseif cc=='f' || cc=='b' || cc=='F' || cc=='B' || cc=='<' || cc=='>' && axh~=0
   smin=app.FrameNumberSlider.Limits(1); % min slider value
   axn=axh-300; % axis number
   
-  stepSize=app.StepsizeEditField.Value; % step size
+  stepSize=app.FrameadvancestepsizeEditField.Value; % step size
   bigStepSize=app.BigstepsizeEditField.Value; % big step size
   
   if isnan(axn)

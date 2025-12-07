@@ -5,7 +5,7 @@ axh=varargin{1}; % handle to axis
 event=varargin{2}; % event data
 app=varargin{3}; % app
 
-% get autotrack mode #: 1=off, 2=advance, 3=semi, 4=auto, 5=multi
+% get autotrack mode #: 1=off, 2=advance, 3=semi, 4=auto, 5=multi, 6=trace
 autoT=find(startsWith(app.AutotrackmodeDropDown.Items,app.AutotrackmodeDropDown.Value));
 
 cp=get(gcbo,'CurrentPoint'); % xy coordinates, not quite the same as event.IntersectionPoint??
@@ -28,7 +28,7 @@ sp=app.sp;
 if seltype == 1 || seltype == 3 % left or right click
   % set NaN point for right click
   if seltype==3
-    cp(:,:)=0;
+    cp(:,:)=0; % 0 denotes a NaN in the sparse array
     % scan for centroid if left click & GUI option set
   elseif seltype==1 && strcmp('none',app.MarkercentroidsearchDropDown.Value)==false
     [cp]=click2centroid(app,cp,axn);
@@ -102,6 +102,22 @@ if seltype==1 && autoT>1
     keyadvance=0; % set keyadvance variable for DLTautotrack3
     DLTautotrack3fun(app,app.handles,keyadvance,axn,cp,fr,sp);
     fullRedraw(app);
+  elseif autoT==6 % trace mode: increment the current point but stay in this frame
+    ptnum=numel(app.CurrentpointDropDown.Items); % number of points
+    if app.sp < ptnum
+      app.sp=app.sp+1; % increment by 1
+    else
+      app.sp=1; % go back to start
+    end
+    app.CurrentpointDropDown.Value=app.sp; % update menu
+
+    % update the control / zoom window
+    cp=app.xypts(fr,(axn*2-1:axn*2)+(app.sp-1)*2*app.nvid);
+    updateSmallPlot(app,app.handles,axn,cp);
+
+    % do a quick screen redraw
+    quickRedraw(app,app.handles,app.sp,fr);
+    
   else
     fullRedraw(app); % mostly for multi-track left or right click
   end

@@ -16,7 +16,7 @@ pl=get(0,'PointerLocation'); % pointer location on the screen
 pos=get(me,'Position'); % get the figure position
 fr=app.FrameNumberSlider.Value;
 sp=app.sp;
-% get autotrack mode #: 1=off, 2=advance, 3=semi, 4=auto, 5=multi
+% get autotrack mode #: 1=off, 2=advance, 3=semi, 4=auto, 5=multi, 6=trace
 autoT=find(startsWith(app.AutotrackmodeDropDown.Items,app.AutotrackmodeDropDown.Value));
 
 % calculate pointer location in normalized units
@@ -446,6 +446,7 @@ elseif cc=='Y' % bring up point splitter interface
     app.xypts(numrng(1):numrng(2),(vnum*2-1:vnum*2)+(sp-1)*2*app.nvid)=0;
     
     app.numpts=app.numpts+1; % update number of points
+    app.pointNames{app.numpts}=sprintf('pt%.0f',app.numpts); % new pointname
     
     % update other data arrays
     app.dltpts(:,app.numpts*3-2:app.numpts*3)=0;
@@ -454,10 +455,11 @@ elseif cc=='Y' % bring up point splitter interface
     % update the drop-down menu
     ptstring={};
     for i=1:app.numpts
-      ptstring{i}=num2str(i);
+      ptstring{i}=app.pointNames{i};
     end
-    app.CurrentpointDropDown.Items=ptstring;
-    app.CurrentpointDropDown.Value=ptstring{sp};
+    app.CurrentpointDropDown.ItemsData=1:app.numpts; % simple array of the number of points
+    app.CurrentpointDropDown.Items=ptstring; % the string labels
+    app.CurrentpointDropDown.Value=app.numpts; % the current active point
     
     % Compute 3D coordinates + residuals
     updateDLTdata(app,sp);
