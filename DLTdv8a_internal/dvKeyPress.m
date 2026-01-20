@@ -12,15 +12,17 @@ end
 
 % start processing the event
 cc=event.Character; % the character from the keypress
-pl=get(0,'PointerLocation'); % pointer location on the screen
-pos=get(me,'Position'); % get the figure position
-fr=app.FrameNumberSlider.Value;
-sp=app.sp;
+fr=app.FrameNumberSlider.Value; % video frame
+sp=app.sp; % selected point
+
 % get autotrack mode #: 1=off, 2=advance, 3=semi, 4=auto, 5=multi, 6=trace
 autoT=find(startsWith(app.AutotrackmodeDropDown.Items,app.AutotrackmodeDropDown.Value));
 
-% calculate pointer location in normalized units
-plocal=[(pl(1)-pos(1,1)+1)/pos(1,3), (pl(2)-pos(1,2)+1)/pos(1,4)];
+% 2026-01-18: new approach to getting pointer position
+vnum=getappdata(me,'videoNumber'); % video number
+axh=vnum+300; % address of axis handle in the handles array
+pixpos=get(app.handles{axh},'CurrentPoint'); % pixel position of pointer
+pixpos=pixpos(1,1:2);
 
 % if the keypress is empty or is a lower-case x, shut off the
 % auto-tracker
@@ -37,27 +39,13 @@ elseif cc=='X'
   app.AutotrackmodeDropDown.Value=app.AutotrackmodeDropDown.Items{5};
   return
 else % figure out what axis & video started the callback
-  if plocal(1)<=0.99 && plocal(2)<=0.99
-    vnum=getappdata(me,'videoNumber'); % video number
-    axh=vnum+300; % address of axis handle in the handles array
-    
-    % store the axis handle and video number for use later
-    app.lastaxh=axh;
-    app.lastvnum=vnum;
-  else
-    %disp('The mouse pointer is not over a video.');
-    %return
-    try
-      axh=app.lastaxh;
-      vnum=app.lastvnum;
-    catch
-      estr=['The mouse pointer is not over a video & the last ', ...
-        'identity is uncertain.'];
-      disp(estr);
-      return
-    end
-    
-  end
+
+  % store the axis handle and video number for use later
+  app.lastaxh=axh;
+  app.lastvnum=vnum;
+
+  % make the target video drawable
+  app.drawVid(vnum)=true;
 end
 
 % check for zoom keys
@@ -65,26 +53,8 @@ if (cc=='=' || cc=='-' || cc=='r') && axh~=0
   
   % zoom in or out as indicated
   if axh~=0
-    axpos=get(app.handles{axh},'Position'); % axis position in figure
     xl=xlim; yl=ylim; % x & y limits on axis
-    % calculate the normalized position within the axis
-    plocal2=[(plocal(1)-axpos(1,1))/axpos(1,3) 1-(plocal(2) ...
-      -axpos(1,2))/axpos(1,4)];
-    
-    % check to make sure we're inside the figure!
-    if sum(plocal2>0.99 | plocal2<0)>0
-      disp('The pointer must be over a video during zoom operations.')
-      return
-    end
-    
-    % calculate the actual pixel postion of the pointer
-    pixpos=round([(xl(2)-xl(1))*plocal2(1)+xl(1) ...
-      (yl(2)-yl(1))*plocal2(2)+yl(1)]);
-    
-    % axis location in pixels (idealized)
-    axpix(3)=pos(3)*axpos(3);
-    axpix(4)=pos(4)*axpos(4);
-    
+
     % set the figure xlimit and ylimit
     if cc=='=' % zoom in
       xlim([pixpos(1)-(xl(2)-xl(1))/3 pixpos(1)+(xl(2)-xl(1))/3]);
@@ -267,27 +237,6 @@ elseif cc=='i' || cc=='j' || cc=='k' || cc=='m' || cc=='4' || ...
   
 elseif cc==' ' % space bar (digitize a point)
   
-%   % handle button clicks in image axes
-%   fh=varargin{1}; % handle to axis
-%   event=varargin{2}; % event data
-%   app=varargin{3}; % app
-
-  axpos=get(app.handles{axh},'Position'); % axis position in figure
-  xl=xlim(app.handles{axh}); yl=ylim(app.handles{axh}); % x & y limits on axis
-  % calculate the normalized position within the axis
-  plocal2=[(plocal(1)-axpos(1,1))/axpos(1,3) 1-(plocal(2) ...
-    -axpos(1,2))/axpos(1,4)];
-  
-  % check to make sure we're inside the figure!
-  if sum(plocal2>0.99 | plocal2<0)>0
-    disp('The pointer must be over a video to digitize a point.')
-    return
-  end
-  
-  % calculate the actual pixel postion of the pointer
-  pixpos=([(xl(2)-xl(1)+0)*plocal2(1)+xl(1) ...
-    (yl(2)-yl(1)+0)*plocal2(2)+yl(1)]);
-
   % create a simulated left-click
   event2=[];
   event2.Button=1;

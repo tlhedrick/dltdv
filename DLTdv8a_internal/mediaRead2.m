@@ -1,10 +1,17 @@
-function [mov,fname]=mediaRead2(fname,frame)
+function [mov,fname]=mediaRead2(fname,frame,forceSeek)
 
-% function [mov,fname]=mediaRead2(fname,frame);
+% function [mov,fname]=mediaRead2(fname,frame,forceSeek);
 %
 % Wrapper function which uses VideoReader, cineRead or mrfRead to
 % grab an image from a video. Also puts the cdata result from
 % cineRead into a mov.* structure.
+%
+% 2026-01-07 - added forceSeek option
+
+% default is to not force seeking
+if nargin==2
+  forceSeek=false;
+end
 
 % check for VideoReader types
 if ischar(fname)
@@ -42,11 +49,11 @@ else % fname is not a char so it is a videoreader obj
   ctime=fname.CurrentTime;
   ftime=(frame-1)*(1/fname.FrameRate); % start time of desired frame
   ftime2=(frame-2)*(1/fname.FrameRate); % start time of frame before desired frame
-  if abs(ctime-ftime)<0.33/fname.FrameRate % 2020-12-13 set a very high bar to not seek
+  if abs(ctime-ftime)<0.33/fname.FrameRate && ~forceSeek % 2020-12-13 set a very high bar to not seek
     % definitely no need to seek
     %disp('not seeking')
     mov.cdata=fname.readFrame;
-  elseif ctime>ftime2 && ctime<ftime
+  elseif ctime>ftime2 && ctime<ftime && ~forceSeek
     %disp('not seeking - intermediate position')
     mov.cdata=fname.readFrame;
     ctime2=fname.CurrentTime; % time after the read
